@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LilyGO Verified Pinout</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --panel:#fff; --ink:#14181f; --muted:#5b6472; --line:#d7dbe2;
+    --sig-a:#0a7d34; --sig-b:#1f6feb; --warn:#b7791f; --pwr:#c02626; --gps:#7c3aed; --ok:#0a7d34;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0f1216; --panel:#161b22; --ink:#e6edf3; --muted:#9aa4b2; --line:#2b3440;
+      --sig-a:#3fb950; --sig-b:#58a6ff; --warn:#e3b341; --pwr:#ff7b72; --gps:#b197fc; --ok:#3fb950;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f1216; --panel:#161b22; --ink:#e6edf3; --muted:#9aa4b2; --line:#2b3440;
+    --sig-a:#3fb950; --sig-b:#58a6ff; --warn:#e3b341; --pwr:#ff7b72; --gps:#b197fc; --ok:#3fb950;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:28px 16px 64px;background:var(--bg);color:var(--ink);
+       font:15px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:1120px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:-.01em}
+  h2{font-size:19px;margin:36px 0 12px}
+  .sub{color:var(--muted);margin:0 0 20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .scroll{overflow-x:auto}
+  svg{display:block;min-width:860px;width:100%;height:auto}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.04em}
+  code,pre{font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  code{background:color-mix(in srgb,var(--ink) 8%,transparent);padding:1px 5px;border-radius:4px}
+  pre{background:color-mix(in srgb,var(--ink) 6%,transparent);padding:14px;border-radius:8px;overflow-x:auto;margin:0}
+  .box{border:1px solid var(--warn);background:color-mix(in srgb,var(--warn) 10%,transparent);
+       border-radius:10px;padding:12px 16px;margin:0 0 18px}
+  .box-ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 9%,transparent)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+  .fix{border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--panel)}
+  .fix b{color:var(--pwr)}
+  .bad{color:var(--pwr);font-weight:700}
+  .good{color:var(--ok);font-weight:700}
+  ol,ul{margin:8px 0;padding-left:22px} li{margin:6px 0}
+  .legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;font-size:13px;color:var(--muted)}
+  .legend span{display:flex;align-items:center;gap:7px}
+  .dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:1px solid #0006}
+  .ring{width:12px;height:12px;border-radius:50%;display:inline-block;border:2px solid #9aa4b2}
+  .tag{display:inline-block;font-size:12px;font-weight:700;padding:0 7px;border-radius:999px;
+       border:1px solid currentColor;line-height:18px;white-space:nowrap}
+  .t-pwr{color:var(--pwr)} .t-gps{color:var(--gps)} .t-brd{color:var(--warn)} .t-you{color:var(--sig-b)} .t-free{color:var(--muted)}
+  /* svg — on-PCB elements use fixed colours (the PCB is always dark) */
+  .pcb{fill:#1b2430;stroke:#46566a;stroke-width:2}
+  .hole{fill:#0b0f14;stroke:#c9a64e;stroke-width:1.5}
+  .silk{fill:#e8edf2;font-size:10.5px;font-weight:600}
+  .silk-h{fill:#8b97a6;font-size:10.5px;font-style:italic}
+  .num{fill:#8b97a6;font-size:9.5px}
+  .holder{fill:#0b0f14;stroke:#5b6676;stroke-width:1.5}
+  .gpsmod{fill:none;stroke:#b197fc;stroke-width:1.6;stroke-dasharray:5 3}
+  .p-pwr{fill:#ef4444;stroke:#7f1d1d;stroke-width:1}
+  .p-gnd{fill:#e5e7eb;stroke:#111;stroke-width:1}
+  .p-brd{fill:#f59e0b;stroke:#78350f;stroke-width:1}
+  .p-gps{fill:#a78bfa;stroke:#4c1d95;stroke-width:1}
+  .p-bad{fill:#f59e0b;stroke:#ef4444;stroke-width:3}
+  .p-free{fill:#1b2430;stroke:#9aa4b2;stroke-width:1.8}
+  .p-hole{fill:#0b0f14;stroke:#c9a64e;stroke-width:1.8}
+  .p-a{fill:#22c55e;stroke:#14532d;stroke-width:1.2}
+  .p-b{fill:#3b82f6;stroke:#1e3a8a;stroke-width:1.2}
+  .r{font-size:11px;fill:var(--muted)}
+  .r-pwr{font-size:11px;fill:var(--pwr);font-weight:700}
+  .r-gps{font-size:11px;fill:var(--gps)}
+  .r-brd{font-size:11px;fill:var(--warn)}
+  .r-bad{font-size:11px;fill:var(--pwr);font-weight:700}
+  .r-a{font-size:11.5px;fill:var(--sig-a);font-weight:700}
+  .r-b{font-size:11.5px;fill:var(--sig-b);font-weight:700}
+  .w{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+  .cap{fill:var(--ink);font-size:12.5px;font-weight:700}
+  .capm{fill:var(--muted);font-size:11px}
+  .in-t{fill:#e8edf2;font-size:11px;font-weight:700}
+  .in-s{fill:#9fb0c3;font-size:9.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Guardian Pack — LilyGO board, verified pinout &amp; wiring</h1>
+  <p class="sub"><b>LILYGO T-A7670G + L76K GPS</b> (product Q425) · PCB silkscreen <code>XY--A7670(GPS+ADC) V1.4 2024-4-26</code> ·
+     ESP32-WROVER-E · SIMCom A7670G. This replaces the previous version of this page, which had wrong pins.</p>
+
+  <div class="box box-ok">
+    <b>How this was verified (2026-10-05).</b> Header order taken from LilyGO's own schematic
+    <code>T-A7670X-V1.4.pdf</code> (connectors PX and PY), GPIO roles from LilyGO's pin table for the
+    <i>A7670G-GPS</i> version, the <code>ExternalGPS_A7670G_Only</code> example and the <code>Extern-GPS-Module</code> schematic —
+    then checked pin by pin against the silkscreen visible in your photos. Every label that is readable on your board matches.
+  </div>
+
+  <h2>What was wrong in the old version</h2>
+  <div class="grid">
+    <div class="fix"><b>SOS button on IO19.</b> IO19 is the GPS module's <i>WAKE_UP</i> line. Your button is <i>normally closed</i>,
+      so at rest it would hold WAKE_UP low = GPS permanently asleep = no location in any SOS SMS. Button moved to <b class="good">IO32</b>.</div>
+    <div class="fix"><b>IO23 shown as "spare".</b> It's the GPS 1-PPS output. IO21/IO22 ("verify") are confirmed taken: GPS serial.
+      On this board only <b class="good">IO18</b> and <b class="good">IO32</b> are free <i>and</i> can drive an output.</div>
+    <div class="fix"><b>Pin order on both headers was wrong.</b> It was an ESP32 DevKit layout (EN, IO16, IO17, TX0 in the wrong places).
+      Redrawn below from the V1.4 schematic.</div>
+    <div class="fix"><b>Antenna sockets drawn at the ESP32 end.</b> LTE socket is on the <i>front</i>, at the modem end, marked <code>RF</code>.
+      GPS socket is on the small upright <i>GPS board on the back</i>. The <code>GNSS</code> spot on the main board is empty — the A7670G has no GPS inside.</div>
+    <div class="fix"><b>"Wire by the silkscreen label."</b> On V1.4 the battery holder and GPS board hide most labels (IO18, IO19, IO21–23, IO5, IO34, IO26, IO27, IO4, IO2, IO15, IO14).
+      Now: identify the edge, count from the ESP32 end, cross-check against the labels you <i>can</i> read.</div>
+    <div class="fix"><b>Button assumed normally-open.</b> Yours says <i>Momentary Push Button Normally Closed</i>. Wired to GND with
+      <code>INPUT_PULLUP</code>: idle reads <code>LOW</code>, pressed reads <code>HIGH</code>. The firmware handles it — nothing to buy.</div>
+    <div class="fix"><b>Buzzer moved IO32 → IO18.</b> The SOS button needs IO32 because it's an RTC pin: it can wake the ESP32 from deep sleep. IO18 can't.</div>
+    <div class="fix"><b>Small fixes.</b> Charger is a CN3065 (500 mA) + DW06D protection, not a TP4056. The 5 V pin is <code>VBUS</code> (5 V max), not VIN.</div>
+  </div>
+
+  <h2>Find your bearings first (never use "left/right" — flipping the board swaps them)</h2>
+  <div class="card">
+    <ul>
+      <li><b>ESP32 end</b> = the end with the silver ESP32 module. All pin positions below are counted <b>1 → 16 starting from this end</b>.</li>
+      <li><b>PY edge</b> = the long edge with the <b>ON/OFF slide switch</b> and the white 2-pin socket.</li>
+      <li><b>PX edge</b> = the long edge with the <b>USB-C port</b> and the RST / IO0 buttons.</li>
+    </ul>
+  </div>
+
+  <h2>Figure 1 — FRONT (component side): antennas, SIM, ports</h2>
+  <div class="card scroll">
+    <svg viewBox="0 0 1000 910" role="img" aria-label="Front view of the LilyGO board showing antenna sockets, SIM, switch and USB-C">
+      <text x="500" y="24" text-anchor="middle" class="cap">FRONT — ESP32 end at the top</text>
+      <rect x="330" y="40" width="340" height="830" rx="16" class="pcb"/>
+      <circle cx="352" cy="62" r="7" class="hole"/><circle cx="648" cy="62" r="7" class="hole"/>
+      <circle cx="352" cy="848" r="7" class="hole"/><circle cx="648" cy="848" r="7" class="hole"/>
+      <text x="348" y="92" text-anchor="middle" class="in-t">PY</text>
+      <text x="652" y="92" text-anchor="middle" class="in-t">PX</text>
+
+      <!-- ESP32 -->
+      <rect x="420" y="44" width="160" height="30" rx="3" fill="#3a4554"/>
+      <text x="500" y="63" text-anchor="middle" class="in-s">ESP32 antenna — keep metal away</text>
+      <rect x="410" y="74" width="180" height="170" rx="5" fill="#c3ccd4" stroke="#7f8a94"/>
+      <text x="500" y="156" text-anchor="middle" style="fill:#2b3138;font-size:13px;font-weight:800">ESP32-WROVER-E</text>
+      <text x="500" y="174" text-anchor="middle" style="fill:#4a525b;font-size:10px">4 MB flash · 8 MB PSRAM</text>
+      <!-- RST / IO0 buttons near PX -->
+      <rect x="598" y="108" width="20" height="20" rx="3" fill="#d1d5db"/><text x="608" y="142" text-anchor="middle" class="in-s">RST</text>
+      <rect x="598" y="160" width="20" height="20" rx="3" fill="#d1d5db"/><text x="608" y="194" text-anchor="middle" class="in-s">IO0</text>
+
+      <!-- header holes (front has no labels) -->
+      <g>
+        <circle cx="348" cy="108" r="6" class="p-hole"/><circle cx="348" cy="134" r="8" class="p-b"/><circle cx="348" cy="160" r="8" class="p-b"/>
+        <circle cx="348" cy="186" r="6" class="p-hole"/><circle cx="348" cy="212" r="6" class="p-hole"/><circle cx="348" cy="238" r="6" class="p-hole"/>
+        <circle cx="348" cy="264" r="6" class="p-hole"/><circle cx="348" cy="290" r="6" class="p-hole"/><circle cx="348" cy="316" r="6" class="p-hole"/>
+        <circle cx="348" cy="342" r="6" class="p-hole"/><circle cx="348" cy="368" r="6" class="p-hole"/><circle cx="348" cy="394" r="6" class="p-hole"/>
+        <circle cx="348" cy="420" r="6" class="p-hole"/><circle cx="348" cy="446" r="6" class="p-hole"/><circle cx="348" cy="472" r="6" class="p-hole"/>
+        <circle cx="348" cy="498" r="8" class="p-a"/>
+        <circle cx="652" cy="108" r="6" class="p-hole"/><circle cx="652" cy="134" r="6" class="p-hole"/><circle cx="652" cy="160" r="6" class="p-hole"/>
+        <circle cx="652" cy="186" r="6" class="p-hole"/><circle cx="652" cy="212" r="6" class="p-hole"/><circle cx="652" cy="238" r="6" class="p-hole"/>
+        <circle cx="652" cy="264" r="6" class="p-hole"/><circle cx="652" cy="290" r="6" class="p-hole"/><circle cx="652" cy="316" r="8" class="p-a"/>
+        <circle cx="652" cy="342" r="6" class="p-hole"/><circle cx="652" cy="368" r="6" class="p-hole"/><circle cx="652" cy="394" r="6" class="p-hole"/>
+        <circle cx="652" cy="420" r="6" class="p-hole"/><circle cx="652" cy="446" r="6" class="p-hole"/><circle cx="652" cy="472" r="8" class="p-a"/>
+        <circle cx="652" cy="498" r="6" class="p-hole"/>
+      </g>
+      <text x="318" y="112" text-anchor="end" class="r">1</text><text x="318" y="138" text-anchor="end" class="r-b">2 · GND</text>
+      <text x="318" y="164" text-anchor="end" class="r-b">3 · IO32</text><text x="318" y="242" text-anchor="end" class="r">6</text>
+      <text x="318" y="372" text-anchor="end" class="r">11</text><text x="318" y="502" text-anchor="end" class="r-a">16 · V_BAT</text>
+      <text x="682" y="112" class="r">1</text><text x="682" y="242" class="r">6</text>
+      <text x="682" y="320" class="r-a">9 · IO18</text><text x="682" y="372" class="r">11</text>
+      <text x="682" y="476" class="r-a">15 · GND</text><text x="682" y="502" class="r">16</text>
+      <text x="260" y="300" text-anchor="middle" class="capm">PY edge</text>
+      <text x="260" y="316" text-anchor="middle" class="capm">(switch side)</text>
+      <text x="780" y="200" text-anchor="middle" class="capm">PX edge</text>
+      <text x="780" y="216" text-anchor="middle" class="capm">(USB-C side)</text>
+
+      <!-- power section -->
+      <rect x="410" y="276" width="180" height="96" rx="6" fill="#0f2a22" stroke="#1e6b52"/>
+      <text x="500" y="312" text-anchor="middle" class="in-t">charger + regulators</text>
+      <text x="500" y="330" text-anchor="middle" class="in-s">CN3065 · DW06D protection</text>
+      <text x="500" y="346" text-anchor="middle" class="in-s">all built in — add nothing</text>
+
+      <!-- switch + JST on PY edge -->
+      <rect x="314" y="528" width="18" height="28" rx="2" fill="#9ca3af" stroke="#4b5563"/>
+      <text x="300" y="540" text-anchor="end" class="cap">ON/OFF switch</text>
+      <text x="300" y="556" text-anchor="end" class="capm">battery power only</text>
+      <rect x="334" y="580" width="30" height="34" rx="3" fill="#f1e6da" stroke="#a8937c"/>
+      <text x="300" y="594" text-anchor="end" class="cap">white 2-pin = solar input</text>
+      <text x="300" y="610" text-anchor="end" class="capm">leave empty (your red/black lead fits here)</text>
+
+      <!-- USB-C on PX edge -->
+      <rect x="664" y="626" width="24" height="40" rx="5" fill="#c3ccd4" stroke="#7f8a94"/>
+      <text x="700" y="642" class="cap">USB-C — program + charge</text>
+      <text x="700" y="658" class="capm">use a USB-A → USB-C cable</text>
+
+      <!-- SIM -->
+      <rect x="380" y="610" width="96" height="74" rx="5" fill="#9aa3ad" stroke="#5b6470"/>
+      <text x="428" y="642" text-anchor="middle" style="fill:#1f2933;font-size:11px;font-weight:800">nano-SIM</text>
+      <text x="428" y="658" text-anchor="middle" style="fill:#1f2933;font-size:9px">insert with power OFF</text>
+
+      <!-- GNSS empty footprint -->
+      <rect x="590" y="690" width="22" height="22" rx="2" fill="none" stroke="#9aa4b2" stroke-dasharray="3 3"/>
+      <path d="M612 701 H760" stroke="var(--muted)" stroke-width="1" fill="none"/>
+      <text x="766" y="698" class="cap">"GNSS" spot — empty</text>
+      <text x="766" y="714" class="capm">A7670G has no GPS inside; not used</text>
+
+      <!-- modem -->
+      <rect x="400" y="724" width="190" height="104" rx="6" fill="#f3f4f6" stroke="#9ca3af"/>
+      <rect x="400" y="806" width="190" height="22" rx="0" fill="#dc2626"/>
+      <text x="495" y="768" text-anchor="middle" style="fill:#1f2933;font-size:14px;font-weight:800">A7670G</text>
+      <text x="495" y="786" text-anchor="middle" style="fill:#4b5563;font-size:10px">4G LTE · SMS · data</text>
+      <text x="495" y="821" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:700">SIMCom</text>
+
+      <!-- RF u.FL + BOT -->
+      <circle cx="540" cy="850" r="8" fill="#d6d3cc" stroke="#8a857a" stroke-width="1.5"/><circle cx="540" cy="850" r="2.5" fill="#6b665c"/>
+      <text x="522" y="854" text-anchor="end" class="in-t">RF</text>
+      <rect x="560" y="842" width="16" height="16" rx="2" fill="#d1d5db"/>
+      <path d="M540 858 V888 H700" stroke="var(--sig-a)" stroke-width="3" fill="none"/>
+      <path d="M576 846 L598 826 H700" stroke="var(--muted)" stroke-width="1" fill="none"/>
+      <text x="706" y="884" class="cap">LTE antenna → u.FL marked "RF"</text>
+      <text x="706" y="900" class="capm">front, modem end · connect before first power-on</text>
+      <text x="706" y="822" class="cap">tiny button = BOT (modem boot)</text>
+      <text x="706" y="838" class="capm">don't hold it while powering on</text>
+    </svg>
+    <div class="legend">
+      <span><i class="dot" style="background:#3b82f6"></i> SOS button pins</span>
+      <span><i class="dot" style="background:#22c55e"></i> buzzer pins</span>
+      <span><i class="ring" style="border-color:#c9a64e"></i> other holes — nothing goes here</span>
+    </div>
+  </div>
+
+  <h2>Figure 2 — BACK (battery side): header pinout, battery, GPS antenna</h2>
+  <div class="card scroll">
+    <svg viewBox="0 0 1000 910" role="img" aria-label="Back view of the board with the full header pinout and the four wires">
+      <text x="500" y="24" text-anchor="middle" class="cap">BACK — ESP32 end at the top (PX edge is now on the left)</text>
+      <rect x="330" y="40" width="340" height="830" rx="16" class="pcb"/>
+      <circle cx="352" cy="62" r="7" class="hole"/><circle cx="648" cy="62" r="7" class="hole"/>
+      <circle cx="352" cy="848" r="7" class="hole"/><circle cx="648" cy="848" r="7" class="hole"/>
+      <text x="348" y="92" text-anchor="middle" class="in-t">PX</text>
+      <text x="652" y="92" text-anchor="middle" class="in-t">PY</text>
+
+      <!-- battery holder -->
+      <rect x="448" y="96" width="104" height="742" rx="20" class="holder"/>
+      <text x="500" y="128" text-anchor="middle" style="fill:#e8edf2;font-size:26px;font-weight:800">−</text>
+      <text x="500" y="146" text-anchor="middle" class="in-s">flat end of cell</text>
+      <text x="500" y="806" text-anchor="middle" style="fill:#e8edf2;font-size:26px;font-weight:800">+</text>
+      <text x="500" y="824" text-anchor="middle" class="in-s">button end of cell</text>
+      <text x="500" y="520" text-anchor="middle" class="in-t">18650 holder</text>
+      <text x="500" y="537" text-anchor="middle" class="in-s">reversed cell can</text>
+      <text x="500" y="551" text-anchor="middle" class="in-s">destroy the board</text>
+      <!-- GPS board callout -->
+      <text x="500" y="250" text-anchor="middle" class="in-s">GPS antenna</text>
+      <text x="500" y="264" text-anchor="middle" class="in-s">plugs into the</text>
+      <text x="500" y="278" text-anchor="middle" class="in-s">u.FL on the</text>
+      <text x="500" y="292" text-anchor="middle" class="in-s">upright GPS board</text>
+      <path d="M536 300 L556 316" stroke="#b197fc" stroke-width="1.5" fill="none"/>
+      <rect x="558" y="196" width="22" height="268" rx="4" class="gpsmod"/>
+      <text transform="translate(573,330) rotate(-90)" text-anchor="middle" style="fill:#b197fc;font-size:9.5px;font-weight:700">L76K GPS board</text>
+
+      <!-- PX column (left on back) -->
+      <circle cx="348" cy="108" r="6" class="p-brd"/><text x="380" y="112" class="silk">UART0_TX</text>
+      <circle cx="348" cy="134" r="6" class="p-brd"/><text x="380" y="138" class="silk">UART0_RX</text>
+      <circle cx="348" cy="160" r="6" class="p-pwr"/><text x="380" y="164" class="silk">VDD3V3</text>
+      <circle cx="348" cy="186" r="6" class="p-gnd"/><text x="380" y="190" class="silk-h">GND</text>
+      <circle cx="348" cy="212" r="6" class="p-gps"/><text x="380" y="216" class="silk-h">IO22</text>
+      <circle cx="348" cy="238" r="6" class="p-gps"/><text x="380" y="242" class="silk-h">IO21</text>
+      <circle cx="348" cy="264" r="6" class="p-gps"/><text x="380" y="268" class="silk-h">IO23</text>
+      <circle cx="348" cy="290" r="6" class="p-gps"/><text x="380" y="294" class="silk-h">IO19</text>
+      <circle cx="348" cy="316" r="8" class="p-a"/><text x="380" y="320" class="silk-h">IO18</text>
+      <circle cx="348" cy="342" r="6" class="p-bad"/><text x="380" y="346" class="silk-h">IO5</text>
+      <circle cx="348" cy="368" r="6" class="p-free"/><text x="380" y="372" class="silk">IO39</text>
+      <circle cx="348" cy="394" r="6" class="p-brd"/><text x="380" y="398" class="silk">IO36</text>
+      <circle cx="348" cy="420" r="6" class="p-brd"/><text x="380" y="424" class="silk">IO00</text>
+      <circle cx="348" cy="446" r="6" class="p-brd"/><text x="380" y="450" class="silk">RST</text>
+      <circle cx="348" cy="472" r="8" class="p-a"/><text x="380" y="476" class="silk">GND</text>
+      <circle cx="348" cy="498" r="6" class="p-pwr"/><text x="380" y="502" class="silk">VBUS</text>
+      <!-- PX roles -->
+      <text x="316" y="112" text-anchor="end" class="r-brd">1 · USB serial — leave</text>
+      <text x="316" y="138" text-anchor="end" class="r-brd">2 · USB serial — leave</text>
+      <text x="316" y="164" text-anchor="end" class="r-pwr">3 · 3.3 V — never to GND</text>
+      <text x="316" y="190" text-anchor="end" class="r">4 · ground (spare)</text>
+      <text x="316" y="216" text-anchor="end" class="r-gps">5 · GPS data out — taken</text>
+      <text x="316" y="242" text-anchor="end" class="r-gps">6 · GPS data in — taken</text>
+      <text x="316" y="268" text-anchor="end" class="r-gps">7 · GPS 1PPS — taken</text>
+      <text x="316" y="294" text-anchor="end" class="r-gps">8 · GPS wake — taken</text>
+      <text x="316" y="346" text-anchor="end" class="r-bad">10 · modem reset — NEVER wire</text>
+      <text x="316" y="372" text-anchor="end" class="r">11 · free (input only)</text>
+      <text x="316" y="398" text-anchor="end" class="r-brd">12 · solar voltage — leave</text>
+      <text x="316" y="424" text-anchor="end" class="r-brd">13 · BOOT button — leave</text>
+      <text x="316" y="450" text-anchor="end" class="r-brd">14 · reset — leave</text>
+      <text x="316" y="502" text-anchor="end" class="r-pwr">16 · USB 5 V — never to GND</text>
+
+      <!-- PY column (right on back) -->
+      <circle cx="652" cy="108" r="6" class="p-pwr"/><text x="622" y="112" text-anchor="end" class="silk">V3V3</text>
+      <circle cx="652" cy="134" r="8" class="p-b"/><text x="622" y="138" text-anchor="end" class="silk">GND</text>
+      <circle cx="652" cy="160" r="8" class="p-b"/><text x="622" y="164" text-anchor="end" class="silk">IO32</text>
+      <circle cx="652" cy="186" r="6" class="p-brd"/><text x="622" y="190" text-anchor="end" class="silk">33</text>
+      <circle cx="652" cy="212" r="6" class="p-free"/><text x="622" y="216" text-anchor="end" class="silk-h">IO34</text>
+      <circle cx="652" cy="238" r="6" class="p-brd"/><text x="622" y="242" text-anchor="end" class="silk">35</text>
+      <circle cx="652" cy="264" r="6" class="p-brd"/><text x="622" y="268" text-anchor="end" class="silk">25</text>
+      <circle cx="652" cy="290" r="6" class="p-brd"/><text x="622" y="294" text-anchor="end" class="silk-h">IO26</text>
+      <circle cx="652" cy="316" r="6" class="p-brd"/><text x="622" y="320" text-anchor="end" class="silk-h">IO27</text>
+      <circle cx="652" cy="342" r="6" class="p-bad"/><text x="622" y="346" text-anchor="end" class="silk-h">IO4</text>
+      <circle cx="652" cy="368" r="6" class="p-brd"/><text x="622" y="372" text-anchor="end" class="silk-h">IO2</text>
+      <circle cx="652" cy="394" r="6" class="p-brd"/><text x="622" y="398" text-anchor="end" class="silk-h">IO15</text>
+      <circle cx="652" cy="420" r="6" class="p-brd"/><text x="622" y="424" text-anchor="end" class="silk-h">IO14</text>
+      <circle cx="652" cy="446" r="6" class="p-brd"/><text x="622" y="450" text-anchor="end" class="silk">IO13</text>
+      <circle cx="652" cy="472" r="6" class="p-bad"/><text x="622" y="476" text-anchor="end" class="silk">IO12</text>
+      <circle cx="652" cy="498" r="8" class="p-a" style="stroke:#ef4444;stroke-width:2.5"/><text x="622" y="502" text-anchor="end" class="silk">V_BAT</text>
+      <!-- PY roles -->
+      <text x="684" y="112" class="r-pwr">1 · 3.3 V — never to GND</text>
+      <text x="684" y="190" class="r-brd">4 · modem RI — leave</text>
+      <text x="684" y="216" class="r">5 · free (input only)</text>
+      <text x="684" y="242" class="r-brd">6 · battery voltage — leave</text>
+      <text x="684" y="268" class="r-brd">7 · modem DTR — leave</text>
+      <text x="684" y="294" class="r-brd">8 · modem serial — leave</text>
+      <text x="684" y="320" class="r-brd">9 · modem serial — leave</text>
+      <text x="684" y="346" class="r-bad">10 · modem PWRKEY — NEVER wire</text>
+      <text x="684" y="372" class="r-brd">11 · SD card — leave</text>
+      <text x="684" y="398" class="r-brd">12 · SD card — leave</text>
+      <text x="684" y="424" class="r-brd">13 · SD card — leave</text>
+      <text x="684" y="450" class="r-brd">14 · SD card — leave</text>
+      <text x="684" y="476" class="r-bad">15 · modem power — NEVER wire</text>
+      <path class="w" style="stroke:var(--pwr)" d="M660 498 H900"/>
+      <text x="684" y="492" class="r-a">16 · V_BAT → buzzer (+)</text>
+      <text x="906" y="494" class="cap">C</text>
+      <text x="684" y="516" class="r-pwr">battery + — never to GND</text>
+
+      <!-- SOS button wires (PY 2 and 3) -->
+      <path class="w" style="stroke:var(--ink)" d="M660 134 H872"/>
+      <path class="w" style="stroke:var(--sig-b)" d="M660 160 H872"/>
+      <text x="684" y="130" class="r-b">2 · GND → button</text>
+      <text x="684" y="156" class="r-b">3 · IO32 → button</text>
+      <rect x="872" y="118" width="58" height="58" rx="9" style="fill:#2b2f36;stroke:#111;stroke-width:1.5"/>
+      <circle cx="901" cy="147" r="16" style="fill:#111;stroke:#555;stroke-width:2"/>
+      <text x="901" y="196" text-anchor="middle" class="cap">SOS button</text>
+      <text x="901" y="212" text-anchor="middle" class="capm">normally closed</text>
+      <text x="901" y="226" text-anchor="middle" class="capm">either lug, either wire</text>
+
+      <!-- buzzer driver wires (PX 9 and 15, PY 16) — circuit in Figure 3 -->
+      <path class="w" style="stroke:var(--sig-a)" d="M340 316 H70"/>
+      <path class="w" style="stroke:var(--ink)" d="M340 472 H70"/>
+      <text x="316" y="310" text-anchor="end" class="r-a">9 · IO18 → 1 kΩ → transistor B</text>
+      <text x="316" y="466" text-anchor="end" class="r-a">15 · GND → transistor E</text>
+      <text x="56" y="320" text-anchor="end" class="cap">A</text>
+      <text x="56" y="476" text-anchor="end" class="cap">B</text>
+      <text x="40" y="394" class="capm">A, B, C → buzzer driver,</text>
+      <text x="40" y="410" class="capm">see Figure 3</text>
+
+      <!-- edge parts -->
+      <rect x="318" y="600" width="20" height="40" rx="5" fill="#c3ccd4" stroke="#7f8a94"/>
+      <text x="306" y="616" text-anchor="end" class="cap">USB-C (seen from behind)</text>
+      <rect x="320" y="700" width="16" height="26" rx="3" fill="#c3ccd4" stroke="#7f8a94"/>
+      <text x="306" y="710" text-anchor="end" class="cap">micro-USB</text>
+      <text x="306" y="726" text-anchor="end" class="capm">modem firmware only — don't use</text>
+      <rect x="662" y="530" width="18" height="28" rx="2" fill="#9ca3af" stroke="#4b5563"/>
+      <text x="694" y="542" class="cap">ON/OFF switch</text>
+      <rect x="586" y="620" width="56" height="64" rx="4" fill="none" stroke="#9aa4b2" stroke-dasharray="4 3"/>
+      <path d="M642 652 H690" stroke="var(--muted)" stroke-width="1" fill="none"/>
+      <text x="694" y="648" class="cap">microSD slot — leave empty</text>
+      <text x="694" y="664" class="capm">a card here blocks uploading</text>
+      <text x="500" y="896" text-anchor="middle" class="capm">▼ modem end · "LILYGO 2024-4-26 V1.4" printed here</text>
+    </svg>
+    <div class="legend">
+      <span><i class="dot" style="background:#3b82f6"></i> your SOS button</span>
+      <span><i class="dot" style="background:#22c55e"></i> your buzzer driver</span>
+      <span><i class="dot" style="background:#ef4444"></i> power — never to GND</span>
+      <span><i class="dot" style="background:#e5e7eb"></i> ground</span>
+      <span><i class="dot" style="background:#a78bfa"></i> GPS module</span>
+      <span><i class="dot" style="background:#f59e0b"></i> used by the board</span>
+      <span><i class="dot" style="background:#f59e0b;border:2px solid #ef4444"></i> never connect anything</span>
+      <span><i class="ring"></i> free</span>
+      <span><b style="color:var(--ink)">bold label</b> = printed &amp; readable on your board · <i>grey italic</i> = hidden on your board</span>
+    </div>
+  </div>
+
+  <h2>Figure 3 — buzzer driver (your buzzer is 5 V, so it can't go straight on a pin)</h2>
+  <div class="card scroll">
+    <svg viewBox="0 0 1000 440" role="img" aria-label="NPN transistor driver for the 5 V active buzzer">
+      <!-- terminals -->
+      <text x="40" y="66" class="cap">C · V_BAT</text><text x="40" y="82" class="capm">PY position 16</text>
+      <text x="40" y="256" class="cap">A · IO18</text><text x="40" y="272" class="capm">PX position 9</text>
+      <text x="40" y="396" class="cap">B · GND</text><text x="40" y="412" class="capm">PX position 15</text>
+      <circle cx="170" cy="62" r="5" style="fill:var(--pwr)"/>
+      <circle cx="170" cy="252" r="5" style="fill:var(--sig-a)"/>
+      <circle cx="170" cy="392" r="5" style="fill:var(--ink)"/>
+      <!-- V_BAT to buzzer + -->
+      <path class="w" style="stroke:var(--pwr)" d="M170 62 H520 V100"/>
+      <!-- buzzer -->
+      <circle cx="520" cy="140" r="38" style="fill:#14181d;stroke:#000;stroke-width:1.5"/>
+      <circle cx="520" cy="140" r="7" style="fill:#0a0c0e;stroke:#4a5058"/>
+      <text x="538" y="116" style="fill:#3fb950;font-size:15px;font-weight:800">+</text>
+      <text x="538" y="174" style="fill:#e5e7eb;font-size:15px;font-weight:800">−</text>
+      <text x="580" y="126" class="cap">Active buzzer (MLE08216)</text>
+      <text x="580" y="142" class="capm">5 V rated · 4–8 V · 30 mA max</text>
+      <text x="580" y="158" class="capm">(+) = long leg, "+" on the sticker</text>
+      <!-- buzzer - to collector -->
+      <path class="w" style="stroke:var(--ink)" d="M520 178 V222"/>
+      <!-- NPN symbol -->
+      <circle cx="505" cy="252" r="36" style="fill:none;stroke:var(--muted);stroke-width:1.5"/>
+      <path d="M488 230 V274" style="stroke:var(--ink);stroke-width:4"/>
+      <path d="M488 242 L520 222" style="stroke:var(--ink);stroke-width:2.5;fill:none"/>
+      <path d="M488 262 L520 282" style="stroke:var(--ink);stroke-width:2.5;fill:none"/>
+      <path d="M520 282 L506 279 L512 270 Z" style="fill:var(--ink)"/>
+      <text x="528" y="218" class="cap">C</text><text x="470" y="244" class="cap">B</text><text x="528" y="298" class="cap">E</text>
+      <text x="580" y="246" class="cap">NPN transistor</text>
+      <text x="580" y="262" class="capm">S8050 or 2N2222A, TO-92 package</text>
+      <!-- IO18 -> 1k -> base -->
+      <path class="w" style="stroke:var(--sig-a)" d="M170 252 H290"/>
+      <path d="M290 252 l8 -10 l16 20 l16 -20 l16 20 l16 -20 l16 20 l8 -10" style="stroke:var(--sig-a);stroke-width:2.5;fill:none"/>
+      <path class="w" style="stroke:var(--sig-a)" d="M386 252 H488"/>
+      <text x="338" y="234" text-anchor="middle" class="cap">1 kΩ — required</text>
+      <!-- emitter to GND -->
+      <path class="w" style="stroke:var(--ink)" d="M520 282 V392 H170"/>
+      <!-- notes -->
+      <text x="580" y="330" class="capm">IO18 HIGH → transistor on → beep. The pin only supplies ~2.6 mA;</text>
+      <text x="580" y="346" class="capm">the buzzer's 30 mA comes from the battery, not the ESP32.</text>
+      <text x="580" y="372" class="capm">With the 1 kΩ in place, mixing up the legs is harmless — it just won't</text>
+      <text x="580" y="388" class="capm">beep right, and the test sketch shows it. Without it, IO18 can be damaged.</text>
+    </svg>
+  </div>
+
+  <h2>Your five connections</h2>
+  <div class="card scroll">
+    <table>
+      <thead><tr><th>#</th><th>Pin</th><th>How to find it (count from the ESP32 end)</th><th>Goes to</th><th>Firmware</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><span class="tag t-you">IO32</span></td><td>PY edge (switch side), position <b>3</b>. Label <code>IO32</code> readable on the back.</td><td>SOS button, either lug</td><td><code>pinMode(32, INPUT_PULLUP)</code> · idle <code>LOW</code>, pressed <code>HIGH</code></td></tr>
+        <tr><td>2</td><td><span class="tag t-free">GND</span></td><td>PY edge, position <b>2</b>. Label <code>GND</code>. Position 1 next to it is <b class="bad">3.3 V</b> — must stay empty.</td><td>SOS button, other lug</td><td>—</td></tr>
+        <tr><td>3 (A)</td><td><span class="tag t-you">IO18</span></td><td>PX edge (USB-C side), position <b>9</b>. Label hidden: it's <b>two</b> positions before the readable <code>IO39</code> (towards the ESP32). The one in between is IO5 — skip it.</td><td>1 kΩ resistor → transistor base</td><td><code>pinMode(18, OUTPUT)</code> · <code>HIGH</code> = beep</td></tr>
+        <tr><td>4 (B)</td><td><span class="tag t-free">GND</span></td><td>PX edge, position <b>15</b>. Label <code>GND</code>, between <code>RST</code> and <code>VBUS</code>.</td><td>Transistor emitter</td><td>—</td></tr>
+        <tr><td>5 (C)</td><td><span class="tag t-pwr">V_BAT</span></td><td>PY edge, position <b>16</b> (the last pin, at the modem end). Label <code>V_BAT</code> readable. Battery voltage, 3.0–4.2 V.</td><td>Buzzer (+)</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <p class="sub" style="margin:12px 0 0"><b>Why V_BAT and not 3.3 V:</b> the buzzer needs 4–8 V. On battery the board's highest available rail is V_BAT (about 3.6–4.2 V),
+      so it will beep, a bit below its full 85 dB. The 3.3 V rail would be quieter, and it also powers the ESP32 and the GPS, which shouldn't share it with a noisy buzzer.
+      Peel the "REMOVE SEAL AFTER WASHING" sticker off for full volume.
+      A 1 kΩ resistor in series with the SOS button is optional insurance: if a wire ever lands on 3.3 V by mistake, it limits the current to 3 mA.</p>
+  </div>
+
+  <h2>How to make the connections (Phase 2 — after the software tests pass)</h2>
+  <div class="card">
+    <ol>
+      <li><b>Photograph the back silkscreen</b> before soldering anything.</li>
+      <li><b>Solder header pins only where you need them</b> — snap single pins off the supplied strip: PY positions 2, 3 and 16, PX positions 9 and 15.
+        With no pin on 3.3 V, VBUS, IO4, IO5 or IO12, you physically can't plug a wire onto the wrong one.</li>
+      <li>Push each pin in from the <b>back</b> (battery side), so it points that way, and solder it on the <b>front</b>. That keeps the iron away from the battery holder and the GPS board.</li>
+      <li>Your jumpers are female–female. For the button: cut one jumper in half, strip 5 mm, solder it to a button lug, and insulate it. Do the same for the second lug.
+        The female ends plug onto the pins.</li>
+      <li><b>Check the button with a multimeter</b> (continuity mode) before connecting it: it should beep when <i>not</i> pressed and go silent when pressed.</li>
+      <li><b>Buzzer driver (Figure 3):</b> solder the 1 kΩ resistor to the transistor's base leg, and the buzzer's (−) leg to the collector.
+        Then add cut jumpers for A (resistor end), B (emitter) and C (buzzer +). Cover every joint with heat-shrink so no two legs can touch.
+        <b>Send me the listing or a photo of the transistor before soldering</b> — the leg order (E-B-C) varies between part numbers.</li>
+      <li>Run the pin-test sketch (it prints the button state and beeps the buzzer) before anything else uses these pins.</li>
+      <li><b>Checkpoint:</b> send a photo of your soldering before you power up.</li>
+    </ol>
+  </div>
+
+  <h2>Before the first power-on — in this order</h2>
+  <div class="card">
+    <p class="sub" style="margin:0 0 6px">Board unpowered: USB unplugged, switch on OFF.</p>
+    <ol>
+      <li><b>LTE antenna</b> → u.FL marked <code>RF</code> on the front at the modem end. Line it up straight and press down until it clicks. Never run the modem without it.</li>
+      <li><b>GPS antenna</b> (the square patch) → the u.FL on the upright L76K GPS board on the back. It's an active antenna, which is what this board needs.
+        In use, the beige ceramic side with the silver dot faces the sky.</li>
+      <li><b>u.FL plugs</b> are fragile (~30 plug cycles). To remove one, lift it straight up by the connector body — never pull the cable.</li>
+      <li><b>Nano-SIM</b>: test it in a phone first — PIN lock off, has load and a data promo. Insert it before power-on, or the modem won't see it.</li>
+      <li><b>18650 cell</b>: flat (−) end to the <b>ESP32 end</b> (white "−" bar near <code>PY1</code>), button (+) end to the <b>LILYGO-logo end</b> (white "+").
+        If you have a multimeter, check the cell reads 3.0–4.2 V first.</li>
+      <li><b>Cable</b>: USB-A → USB-C into the board's USB-C. Not the micro-USB on the back.</li>
+    </ol>
+  </div>
+
+  <h2>Never</h2>
+  <div class="card">
+    <ul>
+      <li>Connect anything to <b>IO4, IO5 or IO12</b> (modem power key, modem reset, power enable). LilyGO says the same about IO4 and IO5.</li>
+      <li>Use <b>IO19, IO21, IO22 or IO23</b>. They belong to the GPS module.</li>
+      <li>Connect <b>3V3, VBUS or V_BAT</b> to GND, or put more than 5 V into VBUS. V_BAT is wired to the battery — treat it as live whenever a cell is inserted, whatever the switch says.</li>
+      <li>Plug a battery into the white 2-pin socket. It only takes a 5–6 V solar panel.</li>
+      <li>Add a TP4056, MT3608, 1000 µF capacitor or any regulator. This board already has all of them. <code>wiring-corrected.html</code> is for a different build.</li>
+      <li>Leave a microSD card inserted while uploading.</li>
+    </ul>
+  </div>
+
+  <h2>Firmware pin map (<code>config.h</code>)</h2>
+  <div class="card">
+<pre>// LilyGO T-A7670G + L76K GPS, PCB V1.4 — verified against LilyGO schematic T-A7670X-V1.4
+// Board-owned pins: never wire to these
+#define BOARD_POWERON_PIN   12   // set HIGH first thing in setup() — required on battery power
+#define MODEM_PWRKEY_PIN     4   // pulse to switch the modem on
+#define MODEM_RESET_PIN      5
+#define MODEM_TX_PIN        26   // ESP32 TX -> modem RX  (Serial1, 115200)
+#define MODEM_RX_PIN        27   // modem TX -> ESP32 RX
+#define MODEM_DTR_PIN       25
+#define MODEM_RI_PIN        33
+#define BATTERY_ADC_PIN     35   // reads V_BAT / 2
+#define SOLAR_ADC_PIN       36
+#define GPS_RX_PIN          22   // L76K TXD -> ESP32  (Serial2, 9600)
+#define GPS_TX_PIN          21   // ESP32 -> L76K RXD
+#define GPS_PPS_PIN         23
+#define GPS_WAKEUP_PIN      19   // HIGH = running, LOW = standby
+#define GPS_BAUD          9600
+
+// Your parts
+#define SOS_BUTTON_PIN      32   // normally-closed button to GND, INPUT_PULLUP
+#define SOS_PRESSED_LEVEL HIGH   // NC button: idle LOW, pressed HIGH
+#define BUZZER_PIN          18   // NPN base via 1 kΩ: HIGH = beep. Set LOW first thing in setup()
+#define BOOT_BUTTON_PIN      0   // onboard IO0 button: stand-in SOS during software tests</pre>
+  </div>
+
+  <p class="sub" style="margin-top:26px">Companion to <code>guardian-pack/docs/02-wiring.md</code>. Sources: LilyGO-T-A76XX repo —
+    <code>schematic/esp32/T-A7670X-V1.4.pdf</code>, <code>schematic/shield/Extern-GPS-Module.pdf</code>,
+    <code>docs/en/esp32/a7670-esp32/README.MD</code>, <code>examples/ExternalGPS_A7670G_Only</code>.</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "watchpack-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "WatchPack backend jobs: PHIVOLCS earthquake watcher, alerts, push notifications.",
+  "scripts": {
+    "scrape": "node src/phivolcs.mjs",
+    "quakes": "node src/run.mjs quakes",
+    "watch": "node src/run.mjs loop"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "firebase-admin": "^13.0.0"
+  }
+}

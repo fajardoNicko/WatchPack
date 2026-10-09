@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guardian Pack — Corrected Wiring</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --panel:#fff; --ink:#14181f; --muted:#5b6472; --line:#d7dbe2;
+    --gnd:#1d2129; --v5:#d92d20; --sig-a:#0a7d34; --sig-b:#1f6feb; --sig-c:#b7791f;
+    --board:#eef1f6; --board-line:#9aa4b2; --chip:#2b3440; --ok:#0a7d34; --bad:#c02626;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1216; --panel:#161b22; --ink:#e6edf3; --muted:#9aa4b2; --line:#2b3440;
+      --gnd:#c9d1d9; --v5:#ff6b5e; --sig-a:#3fb950; --sig-b:#58a6ff; --sig-c:#e3b341;
+      --board:#1c232c; --board-line:#4a5563; --chip:#0d1117; --ok:#3fb950; --bad:#ff7b72;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f1216; --panel:#161b22; --ink:#e6edf3; --muted:#9aa4b2; --line:#2b3440;
+    --gnd:#c9d1d9; --v5:#ff6b5e; --sig-a:#3fb950; --sig-b:#58a6ff; --sig-c:#e3b341;
+    --board:#1c232c; --board-line:#4a5563; --chip:#0d1117; --ok:#3fb950; --bad:#ff7b72;
+  }
+  :root[data-theme="light"]{
+    --bg:#f7f8fa; --panel:#fff; --ink:#14181f; --muted:#5b6472; --line:#d7dbe2;
+    --gnd:#1d2129; --v5:#d92d20; --sig-a:#0a7d34; --sig-b:#1f6feb; --sig-c:#b7791f;
+    --board:#eef1f6; --board-line:#9aa4b2; --chip:#2b3440; --ok:#0a7d34; --bad:#c02626;
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;padding:28px 20px 64px;background:var(--bg);color:var(--ink);
+       font:15px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:1180px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:-.01em}
+  h2{font-size:19px;margin:38px 0 12px;letter-spacing:-.01em}
+  .sub{color:var(--muted);margin:0 0 26px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .scroll{overflow-x:auto}
+  svg{display:block;min-width:1150px;width:100%;height:auto}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.04em}
+  code{font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+       background:color-mix(in srgb,var(--ink) 8%,transparent);padding:1px 5px;border-radius:4px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
+  .note{border-left:3px solid var(--v5);padding:2px 0 2px 14px;margin:14px 0;color:var(--muted)}
+  .bad{color:var(--bad);font-weight:600}
+  .ok{color:var(--ok);font-weight:600}
+  ul{margin:8px 0;padding-left:20px}
+  li{margin:5px 0}
+  .legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:14px;font-size:13.5px;color:var(--muted)}
+  .legend span{display:flex;align-items:center;gap:7px}
+  .sw{width:22px;height:3px;border-radius:2px;display:inline-block}
+  /* SVG classes */
+  .b-rect{fill:var(--board);stroke:var(--board-line);stroke-width:1.5}
+  .b-title{fill:var(--ink);font-weight:700;font-size:14px}
+  .b-sub{fill:var(--muted);font-size:11.5px}
+  .pin{fill:var(--panel);stroke:var(--board-line);stroke-width:1.5}
+  .pin-on{fill:var(--v5);stroke:none}
+  .pin-lbl{fill:var(--muted);font-size:11px}
+  .pin-lbl-on{fill:var(--ink);font-size:11.5px;font-weight:700}
+  .w{fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+  .w-5v{stroke:var(--v5)}
+  .w-gnd{stroke:var(--gnd)}
+  .w-a{stroke:var(--sig-a)}
+  .w-b{stroke:var(--sig-b)}
+  .w-c{stroke:var(--sig-c)}
+  .dot-5v{fill:var(--v5)} .dot-gnd{fill:var(--gnd)}
+  .tag{fill:var(--muted);font-size:11.5px}
+  .tag-em{fill:var(--ink);font-size:12px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div style="border:2px solid var(--bad);border-radius:10px;padding:12px 16px;margin:0 0 18px;background:color-mix(in srgb,var(--bad) 10%,transparent)">
+    <b style="color:var(--bad)">Not your hardware — do not wire from this page.</b> This is for a <i>discrete</i> build (ESP32 DevKit + separate
+    SIM7600 breakout + TP4056 + MT3608). You bought the all-in-one <b>LilyGO T-A7670G + L76K</b> board, which already has the charger,
+    regulators and modem wiring built in. Use <code>lilygo-wiring.html</code>. Kept for reference only.
+  </div>
+
+  <h1>Guardian Pack — Corrected Wiring</h1>
+  <p class="sub">ESP32 DevKit v1 + SIM7600E/A7670 (4G&nbsp;+&nbsp;GPS) + TP4056 charger + MT3608 boost.
+     Matches the locked stack in <code>docs/02-wiring.md §B</code>. Supersedes the generated image,
+     which had the charger backwards, the UART off by one pin, and PWRKEY unconnected.</p>
+
+  <div class="card scroll">
+    <svg viewBox="0 0 1400 1000" role="img" aria-label="Corrected wiring schematic for Guardian Pack">
+
+      <!-- ===================== POWER CHAIN ===================== -->
+      <text x="40" y="72" class="b-title">POWER PATH — charge, protect, boost, then distribute</text>
+
+      <!-- USB-C -->
+      <rect x="40" y="95" width="120" height="90" rx="8" class="b-rect"/>
+      <text x="100" y="130" class="b-title" text-anchor="middle">USB-C</text>
+      <text x="100" y="148" class="b-sub" text-anchor="middle">5 V charge in</text>
+      <text x="100" y="164" class="b-sub" text-anchor="middle">(charging only)</text>
+
+      <!-- TP4056 -->
+      <rect x="210" y="90" width="190" height="130" rx="8" class="b-rect"/>
+      <text x="305" y="140" class="b-title" text-anchor="middle">TP4056</text>
+      <text x="305" y="159" class="b-sub" text-anchor="middle">Li-ion charger</text>
+      <text x="305" y="175" class="b-sub" text-anchor="middle">(get the version with</text>
+      <text x="305" y="190" class="b-sub" text-anchor="middle">DW01 protection)</text>
+      <text x="216" y="120" class="pin-lbl-on">IN+</text>
+      <text x="216" y="180" class="pin-lbl-on">IN−</text>
+      <text x="394" y="120" class="pin-lbl-on" text-anchor="end">OUT+</text>
+      <text x="394" y="180" class="pin-lbl-on" text-anchor="end">OUT−</text>
+      <text x="260" y="212" class="pin-lbl-on" text-anchor="middle">B+</text>
+      <text x="350" y="212" class="pin-lbl-on" text-anchor="middle">B−</text>
+
+      <!-- 18650 -->
+      <rect x="210" y="280" width="190" height="72" rx="8" class="b-rect"/>
+      <text x="305" y="310" class="b-title" text-anchor="middle">18650 Li-ion cell</text>
+      <text x="305" y="330" class="b-sub" text-anchor="middle">3.7 V nominal, ≥2000 mAh</text>
+      <text x="305" y="346" class="b-sub" text-anchor="middle">in holder</text>
+      <text x="252" y="274" class="pin-lbl-on" text-anchor="middle">+</text>
+      <text x="358" y="274" class="pin-lbl-on" text-anchor="middle">−</text>
+
+      <!-- MT3608 -->
+      <rect x="490" y="90" width="190" height="130" rx="8" class="b-rect"/>
+      <text x="585" y="136" class="b-title" text-anchor="middle">MT3608 boost</text>
+      <text x="585" y="156" class="b-sub" text-anchor="middle">step-up 3.7 V → 5 V</text>
+      <text x="585" y="176" class="b-sub" text-anchor="middle">⚠ set output with a meter</text>
+      <text x="585" y="192" class="b-sub" text-anchor="middle">BEFORE connecting a load</text>
+      <text x="496" y="120" class="pin-lbl-on">IN+</text>
+      <text x="496" y="180" class="pin-lbl-on">IN−</text>
+      <text x="674" y="120" class="pin-lbl-on" text-anchor="end">OUT+</text>
+      <text x="674" y="180" class="pin-lbl-on" text-anchor="end">OUT−</text>
+
+      <!-- power wiring -->
+      <path class="w w-5v"  d="M160 125 H210"/>
+      <path class="w w-gnd" d="M160 165 H210"/>
+      <path class="w w-5v"  d="M260 220 V280"/>
+      <path class="w w-gnd" d="M350 220 V280"/>
+      <path class="w w-5v"  d="M400 125 H490"/>
+      <path class="w w-gnd" d="M400 165 H490"/>
+
+      <!-- 5 V bus -->
+      <path class="w w-5v" d="M680 125 H1030"/>
+      <text x="860" y="112" class="tag-em" text-anchor="middle">5 V rail</text>
+
+      <!-- 5 V branch to ESP32 VIN -->
+      <path class="w w-5v" d="M720 125 V50 H250 V790 H360"/>
+      <circle cx="720" cy="125" r="5" class="dot-5v"/>
+      <text x="470" y="42" class="tag">5 V → ESP32 VIN (NOT the raw cell — see notes)</text>
+
+      <!-- 5 V branch to modem -->
+      <path class="w w-5v" d="M1030 125 V330 H790 V405 H900"/>
+
+      <!-- GND from boost to ground bus -->
+      <path class="w w-gnd" d="M680 165 H1340 V950"/>
+
+      <!-- decoupling cap -->
+      <path class="w w-5v"  d="M1030 230 H1100 V252"/>
+      <circle cx="1030" cy="230" r="5" class="dot-5v"/>
+      <path class="w w-gnd" d="M1100 274 V300 H1180 V165"/>
+      <circle cx="1180" cy="165" r="5" class="dot-gnd"/>
+      <path class="w w-5v"  d="M1072 252 H1128"/>
+      <path class="w w-gnd" d="M1072 274 H1128"/>
+      <text x="1140" y="248" class="tag-em">1000 µF</text>
+      <text x="1140" y="266" class="tag">electrolytic, 10 V+</text>
+      <text x="1140" y="284" class="tag">solder it AT the modem's</text>
+      <text x="1140" y="300" class="tag">VCC/GND pins</text>
+
+      <!-- ===================== ESP32 ===================== -->
+      <rect x="360" y="370" width="260" height="440" rx="10" class="b-rect"/>
+      <rect x="428" y="392" width="124" height="86" rx="4" style="fill:var(--chip)"/>
+      <text x="490" y="442" text-anchor="middle" style="fill:#fff;font-size:12px;font-weight:700">ESP-WROOM-32</text>
+      <text x="490" y="356" class="b-title" text-anchor="middle">ESP32 DevKit v1</text>
+
+      <!-- left pins -->
+      <circle cx="360" cy="400" r="5" class="pin"/><text x="372" y="404" class="pin-lbl">3V3</text>
+      <circle cx="360" cy="426" r="5" class="pin"/><text x="372" y="430" class="pin-lbl">EN</text>
+      <circle cx="360" cy="452" r="5" class="pin"/><text x="372" y="456" class="pin-lbl">GPIO36</text>
+      <circle cx="360" cy="478" r="5" class="pin"/><text x="372" y="482" class="pin-lbl">GPIO39</text>
+      <circle cx="360" cy="504" r="5" class="pin"/><text x="372" y="508" class="pin-lbl">GPIO34</text>
+      <circle cx="360" cy="530" r="5" class="pin"/><text x="372" y="534" class="pin-lbl">GPIO35</text>
+      <circle cx="360" cy="556" r="5" class="pin"/><text x="372" y="560" class="pin-lbl">GPIO32</text>
+      <circle cx="360" cy="582" r="5" class="pin"/><text x="372" y="586" class="pin-lbl">GPIO33</text>
+      <circle cx="360" cy="608" r="6" class="pin-on"/><text x="374" y="612" class="pin-lbl-on">GPIO25</text>
+      <circle cx="360" cy="634" r="6" class="pin-on"/><text x="374" y="638" class="pin-lbl-on">GPIO26</text>
+      <circle cx="360" cy="660" r="5" class="pin"/><text x="372" y="664" class="pin-lbl">GPIO27</text>
+      <circle cx="360" cy="686" r="5" class="pin"/><text x="372" y="690" class="pin-lbl">GPIO14</text>
+      <circle cx="360" cy="712" r="5" class="pin"/><text x="372" y="716" class="pin-lbl">GPIO12</text>
+      <circle cx="360" cy="738" r="6" class="pin-on"/><text x="374" y="742" class="pin-lbl-on">GND</text>
+      <circle cx="360" cy="764" r="5" class="pin"/><text x="372" y="768" class="pin-lbl">GPIO13</text>
+      <circle cx="360" cy="790" r="6" class="pin-on"/><text x="374" y="794" class="pin-lbl-on">VIN (5 V)</text>
+
+      <!-- right pins -->
+      <circle cx="620" cy="400" r="5" class="pin"/><text x="608" y="404" class="pin-lbl" text-anchor="end">GND</text>
+      <circle cx="620" cy="426" r="5" class="pin"/><text x="608" y="430" class="pin-lbl" text-anchor="end">GPIO23</text>
+      <circle cx="620" cy="452" r="5" class="pin"/><text x="608" y="456" class="pin-lbl" text-anchor="end">GPIO22</text>
+      <circle cx="620" cy="478" r="5" class="pin"/><text x="608" y="482" class="pin-lbl" text-anchor="end">TX0</text>
+      <circle cx="620" cy="504" r="5" class="pin"/><text x="608" y="508" class="pin-lbl" text-anchor="end">RX0</text>
+      <circle cx="620" cy="530" r="5" class="pin"/><text x="608" y="534" class="pin-lbl" text-anchor="end">GPIO21</text>
+      <circle cx="620" cy="556" r="5" class="pin"/><text x="608" y="560" class="pin-lbl" text-anchor="end">GPIO19</text>
+      <circle cx="620" cy="582" r="5" class="pin"/><text x="608" y="586" class="pin-lbl" text-anchor="end">GPIO18</text>
+      <circle cx="620" cy="608" r="5" class="pin"/><text x="608" y="612" class="pin-lbl" text-anchor="end">GPIO5</text>
+      <circle cx="620" cy="634" r="6" class="pin-on"/><text x="606" y="638" class="pin-lbl-on" text-anchor="end">GPIO17 (TX2)</text>
+      <circle cx="620" cy="660" r="6" class="pin-on"/><text x="606" y="664" class="pin-lbl-on" text-anchor="end">GPIO16 (RX2)</text>
+      <circle cx="620" cy="686" r="6" class="pin-on"/><text x="606" y="690" class="pin-lbl-on" text-anchor="end">GPIO4</text>
+      <circle cx="620" cy="712" r="5" class="pin"/><text x="608" y="716" class="pin-lbl" text-anchor="end">GPIO0</text>
+      <circle cx="620" cy="738" r="5" class="pin"/><text x="608" y="742" class="pin-lbl" text-anchor="end">GPIO2</text>
+      <circle cx="620" cy="764" r="5" class="pin"/><text x="608" y="768" class="pin-lbl" text-anchor="end">GPIO15</text>
+      <circle cx="620" cy="790" r="5" class="pin"/><text x="608" y="794" class="pin-lbl" text-anchor="end">3V3</text>
+
+      <!-- ===================== MODEM ===================== -->
+      <rect x="900" y="370" width="290" height="310" rx="10" class="b-rect"/>
+      <rect x="960" y="392" width="170" height="96" rx="4" style="fill:var(--chip)"/>
+      <text x="1045" y="436" text-anchor="middle" style="fill:#fff;font-size:13px;font-weight:700">SIM7600E</text>
+      <text x="1045" y="456" text-anchor="middle" style="fill:#9aa4b2;font-size:11px">/ A7670 — 4G LTE + GPS</text>
+      <text x="1045" y="356" class="b-title" text-anchor="middle">4G + GPS breakout</text>
+
+      <circle cx="900" cy="405" r="6" class="pin-on"/><text x="912" y="409" class="pin-lbl-on">VCC</text>
+      <circle cx="900" cy="433" r="6" class="pin-on"/><text x="912" y="437" class="pin-lbl-on">GND</text>
+      <circle cx="900" cy="461" r="6" class="pin-on"/><text x="912" y="465" class="pin-lbl-on">TXD</text>
+      <circle cx="900" cy="489" r="6" class="pin-on"/><text x="912" y="493" class="pin-lbl-on">RXD</text>
+      <circle cx="900" cy="517" r="6" class="pin-on"/><text x="912" y="521" class="pin-lbl-on">PWRKEY</text>
+      <circle cx="900" cy="545" r="5" class="pin"/><text x="912" y="549" class="pin-lbl">RESET</text>
+      <circle cx="900" cy="573" r="5" class="pin"/><text x="912" y="577" class="pin-lbl">DTR</text>
+      <circle cx="900" cy="601" r="5" class="pin"/><text x="912" y="605" class="pin-lbl">RI</text>
+      <circle cx="900" cy="629" r="5" class="pin"/><text x="912" y="633" class="pin-lbl">DCD</text>
+
+      <!-- u.FL antenna sockets -->
+      <rect x="1163" y="500" width="14" height="14" rx="2" style="fill:none;stroke:var(--board-line);stroke-width:2"/>
+      <rect x="1163" y="560" width="14" height="14" rx="2" style="fill:none;stroke:var(--board-line);stroke-width:2"/>
+      <text x="1155" y="512" class="pin-lbl" text-anchor="end">u.FL MAIN</text>
+      <text x="1155" y="572" class="pin-lbl" text-anchor="end">u.FL GPS</text>
+      <path class="w" style="stroke:var(--board-line)" d="M1177 507 H1215"/>
+      <path class="w" style="stroke:var(--board-line)" d="M1177 567 H1215"/>
+      <rect x="1215" y="493" width="120" height="28" rx="5" class="b-rect"/>
+      <text x="1275" y="512" class="b-sub" text-anchor="middle">LTE antenna</text>
+      <rect x="1215" y="551" width="120" height="34" rx="5" class="b-rect"/>
+      <text x="1275" y="566" class="b-sub" text-anchor="middle">GPS antenna</text>
+      <text x="1275" y="580" class="b-sub" text-anchor="middle">25×25 mm patch</text>
+      <text x="1275" y="612" class="tag" text-anchor="middle">antennas plug into the u.FL</text>
+      <text x="1275" y="628" class="tag" text-anchor="middle">sockets — never header pins</text>
+
+      <!-- ===================== SIGNALS ===================== -->
+      <!-- GPIO17 -> RXD -->
+      <path class="w w-a" d="M620 634 H740 V489 H900"/>
+      <text x="762" y="482" class="tag-em" style="fill:var(--sig-a)">GPIO17 → RXD</text>
+      <!-- GPIO16 -> TXD -->
+      <path class="w w-b" d="M620 660 H700 V461 H900"/>
+      <text x="722" y="454" class="tag-em" style="fill:var(--sig-b)">GPIO16 ← TXD</text>
+      <!-- GPIO4 -> PWRKEY -->
+      <path class="w w-c" d="M620 686 H660 V517 H900"/>
+      <text x="682" y="538" class="tag-em" style="fill:var(--sig-c)">GPIO4 → PWRKEY</text>
+      <text x="682" y="554" class="tag">pulse LOW ~1 s at boot</text>
+
+      <!-- modem GND up and over to the ground riser -->
+      <path class="w w-gnd" d="M900 433 H830 V350 H1340"/>
+      <circle cx="1340" cy="350" r="5" class="dot-gnd"/>
+
+      <!-- ===================== BUZZER / BUTTON ===================== -->
+      <path class="w w-a" d="M360 608 H280 V858"/>
+      <circle cx="280" cy="888" r="30" style="fill:var(--board);stroke:var(--board-line);stroke-width:1.5"/>
+      <circle cx="280" cy="888" r="8" style="fill:var(--board-line)"/>
+      <path class="w w-gnd" d="M280 918 V950"/>
+      <text x="280" y="800" class="b-title" text-anchor="middle">Buzzer</text>
+      <text x="280" y="818" class="b-sub" text-anchor="middle">active, 3.3 V</text>
+      <text x="280" y="836" class="b-sub" text-anchor="middle">(NPN + 5 V if loud)</text>
+
+      <path class="w w-b" d="M360 634 H150 V858"/>
+      <rect x="118" y="858" width="64" height="42" rx="6" class="b-rect"/>
+      <circle cx="150" cy="879" r="11" style="fill:var(--bad)"/>
+      <path class="w w-gnd" d="M150 900 V950"/>
+      <text x="150" y="800" class="b-title" text-anchor="middle">SOS button</text>
+      <text x="150" y="818" class="b-sub" text-anchor="middle">momentary</text>
+      <text x="150" y="836" class="b-sub" text-anchor="middle">INPUT_PULLUP</text>
+
+      <!-- ESP32 GND to bus -->
+      <path class="w w-gnd" d="M360 738 H330 V950"/>
+
+      <!-- ===================== GROUND BUS ===================== -->
+      <path class="w w-gnd" style="stroke-width:4" d="M118 950 H1340"/>
+      <circle cx="150" cy="950" r="5" class="dot-gnd"/>
+      <circle cx="280" cy="950" r="5" class="dot-gnd"/>
+      <circle cx="330" cy="950" r="5" class="dot-gnd"/>
+      <circle cx="1340" cy="950" r="5" class="dot-gnd"/>
+      <text x="700" y="978" class="tag-em" text-anchor="middle">COMMON GROUND RAIL — every module's GND and the cell's negative meet here</text>
+
+    </svg>
+
+    <div class="legend">
+      <span><i class="sw" style="background:var(--v5)"></i> 5 V / positive</span>
+      <span><i class="sw" style="background:var(--gnd)"></i> ground</span>
+      <span><i class="sw" style="background:var(--sig-a)"></i> ESP32 → modem RX / buzzer</span>
+      <span><i class="sw" style="background:var(--sig-b)"></i> modem TX → ESP32 / button</span>
+      <span><i class="sw" style="background:var(--sig-c)"></i> PWRKEY</span>
+      <span>● solid dot = joined &nbsp;·&nbsp; lines crossing without a dot are <b>not</b> connected</span>
+    </div>
+  </div>
+
+  <h2>Connection table</h2>
+  <div class="card scroll">
+    <table>
+      <thead><tr><th>From</th><th>To</th><th>Why / gotcha</th></tr></thead>
+      <tbody>
+        <tr><td>USB-C VBUS / GND</td><td>TP4056 <code>IN+</code> / <code>IN−</code></td><td>Charging input only. Nothing else connects here.</td></tr>
+        <tr><td>18650 + / −</td><td>TP4056 <code>B+</code> / <code>B−</code></td><td>The cell lives on the <b>B</b> terminals so the charger can both charge it and protect it.</td></tr>
+        <tr><td>TP4056 <code>OUT+</code> / <code>OUT−</code></td><td>MT3608 <code>IN+</code> / <code>IN−</code></td><td>All system power leaves through OUT, giving you over-discharge cutoff (on DW01 boards).</td></tr>
+        <tr><td>MT3608 <code>OUT+</code></td><td>5 V rail</td><td>Set to 5.00 V with a multimeter and <b>no load attached</b> before wiring anything to it.</td></tr>
+        <tr><td>5 V rail</td><td>ESP32 <code>VIN</code></td><td>VIN feeds the onboard regulator, which needs ≥5 V. A 3.7 V cell here browns the board out.</td></tr>
+        <tr><td>5 V rail</td><td>Modem <code>VCC</code></td><td><b>Only if your breakout has an onboard regulator.</b> A bare module wants 3.4–4.2 V — see notes.</td></tr>
+        <tr><td>1000 µF cap</td><td>across modem <code>VCC</code>/<code>GND</code></td><td>Absorbs the ~2 A transmit spike. Must be physically at the pins, not out on the rail.</td></tr>
+        <tr><td>ESP32 <code>GPIO17</code> (TX2)</td><td>Modem <code>RXD</code></td><td>Crossed — transmit goes to receive.</td></tr>
+        <tr><td>ESP32 <code>GPIO16</code> (RX2)</td><td>Modem <code>TXD</code></td><td>Crossed the other way. Both sides are 3.3 V, so no level shifter.</td></tr>
+        <tr><td>ESP32 <code>GPIO4</code></td><td>Modem <code>PWRKEY</code></td><td>Firmware pulses this LOW ~1 s at boot to power the modem on.</td></tr>
+        <tr><td>ESP32 <code>GPIO25</code></td><td>Buzzer (+), other leg → GND</td><td>Small buzzer direct; loud one needs an NPN transistor and the 5 V rail.</td></tr>
+        <tr><td>ESP32 <code>GPIO26</code></td><td>Button, other leg → GND</td><td><code>INPUT_PULLUP</code>: idle reads HIGH, pressed reads LOW.</td></tr>
+        <tr><td>Every GND</td><td>Common rail</td><td>ESP32, modem, boost, cell negative, buzzer, button. Non-negotiable.</td></tr>
+        <tr><td>LTE + GPS antennas</td><td>u.FL sockets</td><td>Not the NET/STA/GPS header pins — those are status signals.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>What changed from the image</h2>
+  <div class="card">
+    <div class="grid">
+      <div>
+        <p><span class="bad">Charger was backwards.</span> The cell ran straight to the ESP32 while the TP4056 hung off to the side with power flowing into its <code>IN</code> pins. Now: USB → <code>IN</code>, cell → <code>B</code>, load → <code>OUT</code>.</p>
+      </div>
+      <div>
+        <p><span class="bad">3.7 V cell fed VIN.</span> The DevKit's AMS1117 regulator needs ≥5 V; a sagging cell collapses the 3.3 V rail and the board resets mid-transmit. VIN now comes off the boosted 5 V rail.</p>
+      </div>
+      <div>
+        <p><span class="bad">UART was off by one pin.</span> A GPIO was driving the modem's GND pin and the modem's RXD sat on ground. Now GND↔GND, GPIO17→RXD, GPIO16←TXD.</p>
+      </div>
+      <div>
+        <p><span class="bad">PWRKEY was floating.</span> Most SIM7600/A7670 boards never power on without it. Wired to GPIO4.</p>
+      </div>
+      <div>
+        <p><span class="bad">Antennas went to header pins.</span> NET, STA and GPS are status outputs. Antennas belong on the u.FL sockets.</p>
+      </div>
+      <div>
+        <p><span class="bad">Cap sat out on the rail.</span> Moved to the modem's own VCC/GND pins, where the current spike actually happens.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Before you power it on</h2>
+  <div class="card">
+    <div class="note">
+      <b>Verify the modem's input voltage first.</b> A bare SIM7600E/A7670 module wants <b>3.4–4.2 V</b> and 5 V will destroy it.
+      Only breakouts with an onboard regulator accept 5 V. If yours is a bare module, feed it from the cell through an
+      <b>MP1584 buck set to 3.8 V</b> instead of the MT3608, and take the ESP32's 5 V from a separate boost.
+      Confirm against your board's silkscreen and datasheet when it arrives.
+    </div>
+    <ul>
+      <li>Set the MT3608 output with a multimeter <b>before</b> connecting any load — they ship at arbitrary voltages and the pot has many turns.</li>
+      <li>Check continuity on the common ground rail before applying power.</li>
+      <li>SIM card: PIN lock disabled, data plan loaded, and already activated by sending one SMS from a phone.</li>
+      <li>Keep antennas away from the cell and any metal. First GPS fix outdoors takes 1–2 minutes — that is normal, not a fault.</li>
+      <li>Bring the subsystems up in the order set out in <code>docs/03-firmware.md</code>: buzzer, GPS, SMS, HTTP POST, buzz command, then integrate.</li>
+    </ul>
+  </div>
+
+  <p class="sub" style="margin-top:26px">Companion to <code>guardian-pack/docs/02-wiring.md §B</code> — open this file directly in a browser.</p>
+</div>
+</body>
+</html>

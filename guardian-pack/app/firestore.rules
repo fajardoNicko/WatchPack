@@ -1,0 +1,65 @@
+rules_version = '2';
+
+// WatchPack Firestore rules.
+//
+// Principle: a parent can only see devices listed in their own profile
+// (users/{uid}.deviceIds). The device's own uploads go through a Cloud Function
+// with the Admin SDK, which bypasses these rules, so nothing is world-writable.
+//
+// Deploy:  firebase deploy --only firestore:rules   (from app/)
+// Note: tools/seed_demo.mjs writes unauthenticated and stops working once these
+// are deployed — run it with the Admin SDK / a service account instead.
+
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function myProfile() {
+      return get(/databases/$(db)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function linkedTo(deviceId) {
+      return signedIn() && (myProfile().deviceIds.hasAny([deviceId]));
+    }
+
+    // A parent's own profile. Linking a device = adding its id here.
+    // TODO(step 3): require a link code via a Cloud Function so a device id alone isn't enough.
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Earthquakes scraped by the backend — public safety data, readable by any parent.
+    match /quakes/{quake} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // Device document + everything under it (locations, zones, alerts, settings).
+    match /devices/{deviceId} {
+      allow read: if linkedTo(deviceId);
+      // Parents may change settings-type fields, never the telemetry the device writes.
+      allow update: if linkedTo(deviceId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['name', 'buzz', 'contacts', 'school', 'photo']);
+      allow create, delete: if false;
+
+      match /locations/{fix} {
+        allow read: if linkedTo(deviceId);
+        allow write: if false;            // only the ingest function writes fixes
+      }
+      match /alerts/{alert} {
+        allow read: if linkedTo(deviceId);
+        allow write: if false;            // only backend jobs raise alerts
+      }
+      match /zones/{zone} {
+        allow read, write: if linkedTo(deviceId);
+      }
+      match /settings/{doc} {
+        allow read, write: if linkedTo(deviceId);
+      }
+    }
+  }
+}

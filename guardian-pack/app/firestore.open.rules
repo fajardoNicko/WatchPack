@@ -1,0 +1,10 @@
+rules_version = '2';
+// TEMPORARY, for seeding only. Deployed by tools/seed.ps1 for a few seconds and
+// replaced by firestore.rules immediately after. Never leave this live.
+service cloud.firestore {
+  match /databases/{db}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

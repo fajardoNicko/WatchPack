@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "quakes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "mag", "order": "DESCENDING" },
+        { "fieldPath": "ts", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
