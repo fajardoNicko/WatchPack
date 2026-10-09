@@ -1,0 +1,24 @@
+# secrets — never commit
+**/google-services.json
+**/firebase_options.dart
+**/secrets.h
+**/serviceAccount*.json
+**/*-adminsdk-*.json
+
+# build output / caches
+**/build/
+**/.dart_tool/
+**/.pio/
+**/node_modules/
+**/.gradle/
+*.log
+
+# ide / os
+.idea/
+.vscode/
+*.iml
+Thumbs.db
+.DS_Store
+
+# raw device photos (large; kept locally)
+Photos/
