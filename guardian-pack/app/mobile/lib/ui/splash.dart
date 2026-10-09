@@ -37,6 +37,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Image.asset('assets/images/logo_mark.png', width: 112, filterQuality: FilterQuality.medium),
+              const SizedBox(height: WpSpace.l),
               const Wordmark(size: 36),
               if (widget.message != null) ...[
                 const SizedBox(height: WpSpace.m),
