@@ -90,13 +90,16 @@ export async function pushToParents(deviceId, { title, body, data = {} }) {
   }
 }
 
-// ---------- CLI ----------
-const mode = process.argv[2] ?? "quakes";
-if (mode === "loop") {
-  for (;;) {
-    try { await quakesJob(); } catch (e) { console.error("quakes job failed:", e.message); }
-    await new Promise((r) => setTimeout(r, 5 * 60e3));
+// ---------- CLI (only when run directly, not when imported) ----------
+const isMain = process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/").split("/").pop());
+if (isMain) {
+  const mode = process.argv[2] ?? "quakes";
+  if (mode === "loop") {
+    for (;;) {
+      try { await quakesJob(); } catch (e) { console.error("quakes job failed:", e.message); }
+      await new Promise((r) => setTimeout(r, 5 * 60e3));
+    }
+  } else {
+    await quakesJob();
   }
-} else {
-  await quakesJob();
 }
