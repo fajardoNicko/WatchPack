@@ -23,9 +23,10 @@
 | Momentary push button, 6 mm panel mount (MLE02963) | ⚠️ **Normally CLOSED** — firmware treats HIGH as pressed. Works fine; no need to swap |
 | Active buzzer, MakerLab **MLE08216** (10 pcs) | Listing: **rated 5 V, operating 4–8 V, 30 mA max**, 85 dB @ 10 cm. Too much current and too high a voltage for a 3.3 V pin → driven by an NPN transistor from V_BAT (see wiring page, Figure 3) |
 
-**Still to buy (buzzer driver):** 1 × NPN transistor, TO-92 (S8050 or 2N2222A), 1 × 1 kΩ resistor
-(¼ W), heat-shrink tubing. Buy a few of each — they cost a few pesos. Transistor and resistor at
-e-Gizmo (checked 2026-10-05, in stock):
+**Buzzer driver parts (2026-10-11):** transistor on hand — **BC337-25** (NPN, 800 mA; leg order with
+the flat face toward you, legs down: **C · B · E**). Also on hand: a 2N5458 — that's a JFET, not
+usable here, set aside. Still needed: **1 × 1 kΩ resistor** (¼ W, bands brown-black-red) and
+heat-shrink or electrical tape. Sources (checked 2026-10-05):
 [3 pcs S8050 TO-92, ₱9](https://e-gizmo.net/gizmoshop/index.php?route=product/product&product_id=49318) ·
 [1K 5% ¼ W resistor, ₱0.50 each](https://e-gizmo.net/gizmoshop/index.php?route=product/product&product_id=49096) ·
 heat-shrink is out of stock there → [MakerLab heat-shrink kit, 164 pcs, ₱59](https://makerlab.ph/products/164-328-530-pcs-polyolefin-heat-shrink-tube-wrap-heatshrink-tubing-kit-2-1-electric-insulation)
