@@ -10,16 +10,19 @@ import '../../theme/tokens.dart';
 /// OpenStreetMap raster tiles (no API key), recoloured on-device: desaturated and
 /// lifted for the light theme so it reads like the grey map in the mockup, inverted
 /// and dimmed for dark mode. Tiles are cached by flutter_map in memory.
-TileLayer baseTiles(BuildContext context) {
+Widget baseTiles(BuildContext context) {
   final dark = Theme.of(context).brightness == Brightness.dark;
-  return TileLayer(
-    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    userAgentPackageName: 'ph.watchpack.app',
-    maxNativeZoom: 19,
-    maxZoom: 20,
-    tileBuilder: (context, tileWidget, tile) => ColorFiltered(
-      colorFilter: ColorFilter.matrix(dark ? _darkMatrix : _lightMatrix),
-      child: tileWidget,
+  // One colour filter over the whole layer (a single offscreen pass per frame),
+  // not one per tile — hundreds of per-tile filters made panning stutter.
+  return ColorFiltered(
+    colorFilter: ColorFilter.matrix(dark ? _darkMatrix : _lightMatrix),
+    child: TileLayer(
+      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      userAgentPackageName: 'ph.watchpack.app',
+      maxNativeZoom: 19,
+      maxZoom: 20,
+      keepBuffer: 3,
+      panBuffer: 1,
     ),
   );
 }

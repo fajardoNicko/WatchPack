@@ -41,25 +41,33 @@ class _FadeSlideInState extends State<FadeSlideIn> with SingleTickerProviderStat
       );
 }
 
-/// Cross-fades (with a slight rise) whenever [switchKey] changes — used for tab
-/// changes so the IndexedStack keeps every tab's state but the swap still moves.
+/// Soft reveal whenever [switchKey] changes — used for tab changes so the
+/// IndexedStack keeps every tab's state but the swap still moves.
+///
+/// Implemented as a background-coloured scrim fading *out* over the new tab, not
+/// an Opacity on the tab itself: opacity over a live map forces the whole map
+/// into an offscreen buffer every frame, which is what made it stutter.
 class TabFade extends StatelessWidget {
   const TabFade({super.key, required this.switchKey, required this.child});
   final Object switchKey;
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
-        key: ValueKey(switchKey),
-        tween: Tween(begin: 0, end: 1),
-        duration: WpMotion.base,
-        curve: WpMotion.curve,
-        builder: (_, t, child) => Opacity(
-          opacity: t,
-          child: Transform.translate(offset: Offset(0, 8 * (1 - t)), child: child),
+  Widget build(BuildContext context) {
+    final bg = Theme.of(context).scaffoldBackgroundColor;
+    return Stack(fit: StackFit.expand, children: [
+      child,
+      IgnorePointer(
+        child: TweenAnimationBuilder<double>(
+          key: ValueKey(switchKey),
+          tween: Tween(begin: 1, end: 0),
+          duration: WpMotion.base,
+          curve: Curves.easeOut,
+          builder: (_, t, _) => t == 0 ? const SizedBox.shrink() : ColoredBox(color: bg.withValues(alpha: t)),
         ),
-        child: child,
-      );
+      ),
+    ]);
+  }
 }
 
 /// Number that counts to its new value instead of jumping (trip stats, battery).
