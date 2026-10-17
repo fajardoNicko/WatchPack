@@ -56,9 +56,9 @@ class SettingsScreen extends ConsumerWidget {
                 child: _BigCard(
                   icon: Symbols.phone_android_rounded,
                   title: 'Device linking',
-                  body: device == null ? 'Link a physical WatchPack device' : 'Linked: ${device.name} (${device.id})',
-                  action: 'Link another',
-                  onTap: () => showLinkDeviceDialog(context, ref),
+                  body: device == null ? 'Link a physical WatchPack device' : 'Showing ${device.name} (${device.id})',
+                  action: (profile?.deviceIds.length ?? 0) > 1 ? 'Switch or link' : 'Link another',
+                  onTap: () => showDevicePicker(context, ref),
                 ),
               ),
               const SizedBox(width: WpSpace.m),

@@ -1,8 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../auth/auth.dart';
+import '../../data/repo.dart';
 import '../../theme/tokens.dart';
 import '../widgets.dart';
 
@@ -77,4 +79,38 @@ Future<void> showLinkDeviceDialog(BuildContext context, WidgetRef ref) async {
   } catch (e) {
     if (context.mounted) showNote(context, 'Could not link: $e');
   }
+}
+
+/// Lists the linked devices to switch between, plus "Link another device".
+Future<void> showDevicePicker(BuildContext context, WidgetRef ref) async {
+  final ids = ref.read(userProfileProvider).value?.deviceIds ?? const <String>[];
+  final current = ref.read(deviceIdProvider);
+  final choice = await showModalBottomSheet<String>(
+    context: context,
+    showDragHandle: true,
+    builder: (c) => SafeArea(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        for (final id in ids)
+          ListTile(
+            leading: const Icon(Symbols.phone_android_rounded),
+            title: FutureBuilder(
+              future: FirebaseFirestore.instance.collection('devices').doc(id).get(),
+              builder: (_, s) => Text((s.data?.data()?['name'] as String?) ?? id),
+            ),
+            subtitle: Text(id),
+            trailing: id == current ? const Icon(Symbols.check_rounded, color: WpColors.cyan) : null,
+            onTap: () => Navigator.pop(c, id),
+          ),
+        ListTile(
+          leading: const Icon(Symbols.link_rounded),
+          title: const Text('Link another device'),
+          onTap: () => Navigator.pop(c, '+link'),
+        ),
+        const SizedBox(height: WpSpace.s),
+      ]),
+    ),
+  );
+  if (choice == null || !context.mounted) return;
+  if (choice == '+link') return showLinkDeviceDialog(context, ref);
+  ref.read(selectedDeviceProvider.notifier).select(choice);
 }
