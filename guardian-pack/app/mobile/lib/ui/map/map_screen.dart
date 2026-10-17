@@ -173,6 +173,14 @@ class _StatusCard extends ConsumerWidget {
                             Icon(Symbols.verified_user_rounded, size: 16, color: WpColors.green),
                             const SizedBox(width: WpSpace.xs),
                             Text('In a safe zone', style: t.bodySmall),
+                          ] else if (!d.gpsFix && d.status != DeviceStatus.offline) ...[
+                            const SizedBox(width: WpSpace.m),
+                            Icon(Symbols.location_searching_rounded, size: 16, color: context.wp.muted),
+                            const SizedBox(width: WpSpace.xs),
+                            Flexible(
+                              child: Text(d.position == null ? 'Waiting for GPS' : 'No GPS · last known spot',
+                                  style: t.bodySmall, overflow: TextOverflow.ellipsis),
+                            ),
                           ],
                         ],
                       ),
@@ -193,8 +201,8 @@ class _StatusCard extends ConsumerWidget {
                     onTap: d.buzz
                         ? null
                         : () async {
-                            await ref.read(deviceActionsProvider).requestBuzz();
-                            if (context.mounted) showNote(context, 'Buzz sent. The device beeps when it next checks in.');
+                            await ref.read(deviceActionsProvider).requestBuzz(d.cmdId);
+                            if (context.mounted) showNote(context, 'Buzz sent. ${d.name}\'s WatchPack beeps within 10 seconds.');
                           },
                   ),
                   _Action(

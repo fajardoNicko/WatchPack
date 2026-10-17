@@ -5,12 +5,23 @@ import 'package:latlong2/latlong.dart';
 import '../auth/auth.dart';
 import 'models.dart';
 
-/// Which device the app is looking at: the first device on the parent's profile.
+/// The device the parent picked in Settings, if they have more than one.
+class SelectedDevice extends Notifier<String?> {
+  @override
+  String? build() => null;
+  void select(String id) => state = id;
+}
+
+final selectedDeviceProvider = NotifierProvider<SelectedDevice, String?>(SelectedDevice.new);
+
+/// Which device the app is looking at: the picked one, else the first on the profile.
 /// Null while the profile loads or when nothing is linked — the Shell shows the
 /// link screen in that case, so the data providers below never run with null.
 final deviceIdProvider = Provider<String?>((ref) {
   final ids = ref.watch(userProfileProvider).value?.deviceIds;
-  return (ids == null || ids.isEmpty) ? null : ids.first;
+  if (ids == null || ids.isEmpty) return null;
+  final picked = ref.watch(selectedDeviceProvider);
+  return picked != null && ids.contains(picked) ? picked : ids.first;
 });
 
 String _requireDevice(Ref ref) {
@@ -68,7 +79,13 @@ class DeviceActions {
   DeviceActions(this._id);
   final String _id;
 
-  Future<void> requestBuzz() => _deviceRef(_id).update({'buzz': true});
+  /// Real devices read their mailbox (cmdbox/{cmdId}); the device doc flag drives
+  /// the "Buzzing…" label until the device clears it.
+  Future<void> requestBuzz(String? cmdId) {
+    final batch = _db.batch()..update(_deviceRef(_id), {'buzz': true});
+    if (cmdId != null) batch.update(_db.collection('cmdbox').doc(cmdId), {'buzz': true});
+    return batch.commit();
+  }
 
   Future<void> setZoneEnabled(String zoneId, bool enabled) =>
       _deviceRef(_id).collection('zones').doc(zoneId).update({'enabled': enabled});

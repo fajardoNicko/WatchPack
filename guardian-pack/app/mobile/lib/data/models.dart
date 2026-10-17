@@ -29,10 +29,14 @@ class Device {
     required this.insideZoneId,
     required this.contacts,
     this.photo,
+    this.cmdId,
+    this.gpsFix = true,
   });
 
   final String id, name;
   final String? photo;                    // child's photo, base64 data URI
+  final String? cmdId;                    // real devices: their command mailbox, cmdbox/{cmdId}
+  final bool gpsFix;                      // false = position is the last known one
   final int battery;
   final DateTime? lastSeen;
   final LatLng? position;
@@ -67,6 +71,8 @@ class Device {
       buzz: m['buzz'] == true,
       insideZoneId: m['insideZoneId'] as String?,
       photo: m['photo'] as String?,
+      cmdId: m['cmdId'] as String?,
+      gpsFix: m['gpsFix'] != false,
       contacts: [
         for (final c in (m['contacts'] as List?) ?? const [])
           if (c is Map) Contact(name: '${c['name'] ?? ''}', phone: '${c['phone'] ?? ''}', photo: c['photo'] as String?),
