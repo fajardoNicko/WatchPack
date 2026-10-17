@@ -1,0 +1,127 @@
+// Live watcher for real devices (the ones provision.mjs registered — they have a cmdId).
+// Turns what the device writes into alerts + push notifications:
+//   SOS · zone enter/exit · low battery · signal loss / back online
+// and runs the PHIVOLCS quake job every 5 minutes. Keep it running during the demo:
+//   npm run watch
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { db, pushToParents, quakesJob } from "./run.mjs";
+
+const EXIT_MARGIN_M = 25;            // hysteresis so GPS jitter at the edge doesn't flap
+const BATTERY_RESET_MARGIN = 5;
+
+const distM = (a, b) => {
+  const R = 6371e3, toR = (d) => (d * Math.PI) / 180;
+  const dLat = toR(b.lat - a.lat), dLng = toR(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toR(a.lat)) * Math.cos(toR(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+};
+const clock = (d = new Date()) =>
+  d.toLocaleTimeString("en-PH", { timeZone: "Asia/Manila", hour: "numeric", minute: "2-digit" });
+
+async function raise(ref, d, type, title, body) {
+  const at = d.lastLat != null ? { lat: d.lastLat, lng: d.lastLng } : {};
+  await ref.collection("alerts").add({ type, title, body, ts: FieldValue.serverTimestamp(), ...at });
+  console.log(`[${clock()}] ${ref.id} ${type}: ${title}`);
+  await pushToParents(ref.id, { title, body, data: { type, deviceId: ref.id } });
+}
+
+async function triggersOf(ref) {
+  const t = (await ref.collection("settings").doc("triggers").get()).data() ?? {};
+  return {
+    lowBatteryOn: t.lowBatteryOn !== false, lowBatteryPct: t.lowBatteryPct ?? 20,
+    signalLossOn: t.signalLossOn !== false, signalLossMin: t.signalLossMin ?? 10,
+  };
+}
+
+async function evaluate(ref) {
+  const snap = await ref.get();                    // fresh: an earlier pass may have patched watch.*
+  const d = snap.data(), name = d.name ?? "Your child";
+  const watch = d.watch ?? {};
+  const patch = {};
+
+  // SOS — once per press (the device stamps sosAt on every new press).
+  const sosAt = d.sosAt instanceof Timestamp ? d.sosAt.toMillis() : null;
+  if (d.status === "sos" && sosAt && watch.sosAt !== sosAt) {
+    patch["watch.sosAt"] = sosAt;
+    await raise(ref, d, "sos", `SOS — ${name} needs help`,
+      `${name} pressed the emergency button at ${clock(new Date(sosAt))}. Open WatchPack for the live location.`);
+  }
+
+  // Zones — only with a current GPS fix.
+  if (d.gpsFix && d.lastLat != null) {
+    const here = { lat: d.lastLat, lng: d.lastLng };
+    const zones = (await ref.collection("zones").get()).docs
+      .map((z) => ({ id: z.id, ...z.data() }))
+      .filter((z) => z.enabled !== false);
+    const current = zones.find((z) => z.id === d.insideZoneId);
+    const stillInside = current && distM(here, current) <= (current.radiusM ?? 200) + EXIT_MARGIN_M;
+    if (!stillInside) {
+      const entered = zones
+        .filter((z) => distM(here, z) <= (z.radiusM ?? 200))
+        .sort((a, b) => (a.radiusM ?? 200) - (b.radiusM ?? 200))[0];
+      if (current) {
+        await raise(ref, d, "zone_exit", `${name} left ${current.name}`, `Exited the ${current.name} zone at ${clock()}.`);
+      }
+      if (entered) {
+        await raise(ref, d, "zone_enter", `${name} arrived at ${entered.name}`, `Entered the ${entered.name} zone at ${clock()}.`);
+      }
+      const next = entered?.id ?? null;
+      if (next !== (d.insideZoneId ?? null)) patch.insideZoneId = next;
+    }
+  }
+
+  // Low battery — once per dip below the threshold.
+  const t = await triggersOf(ref);
+  if (d.lastSeen && t.lowBatteryOn && typeof d.battery === "number") {
+    if (d.battery <= t.lowBatteryPct && !watch.lowBattery) {
+      patch["watch.lowBattery"] = true;
+      await raise(ref, d, "low_battery", `${name}'s WatchPack battery is low`, `Battery at ${d.battery}%. Charge it soon.`);
+    } else if (d.battery > t.lowBatteryPct + BATTERY_RESET_MARGIN && watch.lowBattery) {
+      patch["watch.lowBattery"] = false;
+    }
+  }
+
+  // Back online after a signal-loss alert.
+  const seen = d.lastSeen instanceof Timestamp ? d.lastSeen.toMillis() : null;
+  if (watch.offline && seen && Date.now() - seen < 2 * 60e3) {
+    patch["watch.offline"] = false;
+    await raise(ref, d, "other", `${name}'s WatchPack is back online`, `Reconnected at ${clock()}.`);
+  }
+
+  if (Object.keys(patch).length) await ref.update(patch);
+}
+
+// Signal loss needs a clock, not a change, so it's checked every minute.
+async function signalLossSweep() {
+  const devices = await db.collection("devices").get();
+  for (const snap of devices.docs) {
+    const d = snap.data();
+    if (!d.cmdId || !(d.lastSeen instanceof Timestamp) || d.watch?.offline) continue;
+    const t = await triggersOf(snap.ref);
+    const minutes = (Date.now() - d.lastSeen.toMillis()) / 60e3;
+    if (!t.signalLossOn || minutes < t.signalLossMin) continue;
+    await snap.ref.update({ "watch.offline": true });
+    await raise(snap.ref, d, "signal_loss", `Lost contact with ${d.name ?? "your child"}'s WatchPack`,
+      `No update for ${Math.round(minutes)} min. Last seen at ${clock(d.lastSeen.toDate())}.`);
+  }
+}
+
+// Serialise per device so overlapping snapshots don't raise the same alert twice.
+const queue = new Map();
+const enqueue = (ref) => {
+  const prev = queue.get(ref.id) ?? Promise.resolve();
+  const next = prev.then(() => evaluate(ref)).catch((e) => console.error(`${ref.id}:`, e.message));
+  queue.set(ref.id, next);
+};
+
+console.log(`[${clock()}] watching devices…`);
+db.collection("devices").onSnapshot((q) => {
+  for (const ch of q.docChanges()) {
+    if (ch.type !== "removed" && ch.doc.get("cmdId")) enqueue(ch.doc.ref);
+  }
+}, (e) => console.error("snapshot error:", e.message));
+
+setInterval(() => signalLossSweep().catch((e) => console.error("sweep:", e.message)), 60e3);
+const quakes = () => quakesJob().catch((e) => console.error("quakes job failed:", e.message));
+quakes();
+setInterval(quakes, 5 * 60e3);
