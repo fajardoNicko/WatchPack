@@ -35,3 +35,7 @@
 // ---- Behaviour ----
 #define SOS_HOLD_MS        2000   // hold time before an SOS fires (bump protection)
 #define SERIAL_BAUD      115200
+
+// ---- Cloud ----
+#define FIREBASE_PROJECT "watchpack-f9483"
+#define APN              "internet"   // Smart; only used if LTE didn't bring up data by itself

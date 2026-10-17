@@ -7,3 +7,7 @@
 
 // Name shown in the SOS text.
 #define CHILD_NAME "Ivy"
+
+// Cloud identity — printed by `node app/backend/src/provision.mjs <deviceId>`.
+#define DEVICE_ID     "wp-001"
+#define DEVICE_SECRET "00000000000000000000000000000000"
