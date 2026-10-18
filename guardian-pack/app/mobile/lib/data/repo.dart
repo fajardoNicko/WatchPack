@@ -5,12 +5,24 @@ import 'package:latlong2/latlong.dart';
 import '../auth/auth.dart';
 import 'models.dart';
 
-/// Which device the app is looking at: the first device on the parent's profile.
+/// The device the parent picked in Settings, if they have more than one.
+class SelectedDevice extends Notifier<String?> {
+  @override
+  String? build() => null;
+  void select(String id) => state = id;
+  void clear() => state = null;
+}
+
+final selectedDeviceProvider = NotifierProvider<SelectedDevice, String?>(SelectedDevice.new);
+
+/// Which device the app is looking at: the picked one, else the first on the profile.
 /// Null while the profile loads or when nothing is linked — the Shell shows the
 /// link screen in that case, so the data providers below never run with null.
 final deviceIdProvider = Provider<String?>((ref) {
   final ids = ref.watch(userProfileProvider).value?.deviceIds;
-  return (ids == null || ids.isEmpty) ? null : ids.first;
+  if (ids == null || ids.isEmpty) return null;
+  final picked = ref.watch(selectedDeviceProvider);
+  return picked != null && ids.contains(picked) ? picked : ids.first;
 });
 
 String _requireDevice(Ref ref) {
@@ -68,7 +80,18 @@ class DeviceActions {
   DeviceActions(this._id);
   final String _id;
 
-  Future<void> requestBuzz() => _deviceRef(_id).update({'buzz': true});
+  /// Real devices read their mailbox (cmdbox/{cmdId}); the device doc flag drives
+  /// the "Buzzing…" label until the device clears it.
+  Future<void> requestBuzz(String? cmdId) => _setBuzz(cmdId, true);
+
+  /// Withdraws a buzz the device hasn't picked up (e.g. it was off).
+  Future<void> cancelBuzz(String? cmdId) => _setBuzz(cmdId, false);
+
+  Future<void> _setBuzz(String? cmdId, bool on) {
+    final batch = _db.batch()..update(_deviceRef(_id), {'buzz': on});
+    if (cmdId != null) batch.update(_db.collection('cmdbox').doc(cmdId), {'buzz': on});
+    return batch.commit();
+  }
 
   Future<void> setZoneEnabled(String zoneId, bool enabled) =>
       _deviceRef(_id).collection('zones').doc(zoneId).update({'enabled': enabled});
@@ -99,9 +122,15 @@ class DeviceActions {
   Future<void> updateTriggers(Map<String, Object> patch) =>
       _deviceRef(_id).collection('settings').doc('triggers').set(patch, SetOptions(merge: true));
 
-  /// Replaces the whole family-contacts list (it's one array on the device doc).
-  Future<void> updateContacts(List<Contact> contacts) =>
-      _deviceRef(_id).update({'contacts': [for (final c in contacts) c.toMap()]});
+  /// Replaces the whole family-contacts list (it's one array on the device doc). Real
+  /// devices also get the numbers in their mailbox — that's who the SOS text goes to.
+  Future<void> updateContacts(List<Contact> contacts, {String? cmdId}) {
+    final batch = _db.batch()..update(_deviceRef(_id), {'contacts': [for (final c in contacts) c.toMap()]});
+    if (cmdId != null) {
+      batch.update(_db.collection('cmdbox').doc(cmdId), {'contacts': contacts.map((c) => c.phone).join(',')});
+    }
+    return batch.commit();
+  }
 
   /// Child's photo (data URI) or null to remove it.
   Future<void> setChildPhoto(String? dataUri) =>

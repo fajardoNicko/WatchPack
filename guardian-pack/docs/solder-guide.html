@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WatchPack Solder Guide</title>
+<style>
+  /* Layout: one phone-width column for the bench; each part = diagram, then a tick-off list. */
+  :root {
+    --bg: #f3f5f2;        /* bench paper, slight green bias toward the solder mask */
+    --panel: #ffffff;
+    --ink: #17201b;
+    --muted: #5a665f;
+    --line: #d5dcd6;
+    --mask: #1e6b47;      /* solder-mask green: the accent */
+    --copper: #b07d24;    /* pads, pins, solder */
+    --danger: #c0341f;
+    --sig-btn: #2563c9;   /* SOS button wires */
+    --sig-buz: #c08a00;   /* buzzer signal (yellow wire) */
+    --edge: #ffffff;      /* outline under dark wires */
+    --wire-gnd: #1d1f1e;
+    --chip: color-mix(in srgb, var(--mask) 10%, var(--panel));
+    --f-display: "Bahnschrift SemiCondensed", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+    --f-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --f-mono: ui-monospace, "Cascadia Mono", Consolas, "Roboto Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1412; --panel: #171d1a; --ink: #e3eae5; --muted: #98a59d; --line: #2a332e;
+      --mask: #4cc18a; --copper: #d9a647; --danger: #ff7a66; --sig-btn: #6ea2ff; --sig-buz: #f2c230;
+      --edge: #5c6661; --wire-gnd: #2b302d; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1412; --panel: #171d1a; --ink: #e3eae5; --muted: #98a59d; --line: #2a332e;
+    --mask: #4cc18a; --copper: #d9a647; --danger: #ff7a66; --sig-btn: #6ea2ff; --sig-buz: #f2c230;
+    --edge: #5c6661; --wire-gnd: #2b302d; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 var(--f-body); padding: 20px 16px 64px; }
+  .wrap { max-width: 720px; margin: 0 auto; display: grid; gap: 28px; }
+  h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.15; }
+  h1 { font-size: 30px; letter-spacing: -0.01em; }
+  h2 { font-size: 22px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  h3 { font-size: 17px; }
+  p { margin: 0; }
+  .eyebrow { font: 600 12px/1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--mask); }
+  .lede { color: var(--muted); max-width: 62ch; }
+  section { display: grid; gap: 14px; }
+  .count { font: 600 13px var(--f-mono); color: var(--muted); }
+  .count.done { color: var(--mask); }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+  .fig { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px; overflow-x: auto; }
+  .fig svg { display: block; width: 100%; height: auto; max-width: 560px; margin: 0 auto; }
+  .cap { font-size: 13.5px; color: var(--muted); padding: 2px 8px 6px; }
+  code, .pin { font: 600 0.9em var(--f-mono); }
+  .pin { background: var(--chip); color: var(--ink); padding: 1px 6px; border-radius: 5px; white-space: nowrap; }
+  .warn { border: 1px solid var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--panel)); border-radius: 12px; padding: 14px 16px; display: grid; gap: 6px; }
+  .warn b { color: var(--danger); }
+  ul.plain { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+
+  /* the wire map */
+  .map { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  .map th, .map td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .map th { font: 600 11.5px var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--edge); }
+  .tablewrap { overflow-x: auto; }
+
+  /* checklist */
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .steps li { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; padding: 10px 6px; border-radius: 8px; }
+  .steps li:has(input:checked) { background: color-mix(in srgb, var(--mask) 7%, transparent); }
+  .steps li:has(input:checked) .txt { color: var(--muted); }
+  .steps input { width: 22px; height: 22px; margin: 2px 0 0; accent-color: var(--mask); cursor: pointer; }
+  .steps input:focus-visible { outline: 2px solid var(--mask); outline-offset: 2px; }
+  .steps label { cursor: pointer; }
+  .txt { display: grid; gap: 4px; min-width: 0; }
+  .txt small { color: var(--muted); font-size: 13.5px; }
+
+  /* svg text, theme-aware */
+  .t { fill: var(--ink); font: 600 12px var(--f-mono); }
+  .tm { fill: var(--muted); font: 500 10.5px var(--f-mono); }
+  .th { fill: var(--muted); font: italic 500 10.5px var(--f-mono); }
+  .tbtn { fill: var(--sig-btn); font: 600 11px var(--f-mono); }
+  .tbuz { fill: var(--sig-buz); font: 600 11px var(--f-mono); }
+  .tdan { fill: var(--danger); font: 600 10.5px var(--f-mono); }
+  .tcap { fill: var(--ink); font: 700 13px var(--f-display); letter-spacing: 0.02em; }
+  .onpcb { fill: #dfe7e2; font: 600 10px var(--f-mono); }
+  .onpcb-s { fill: #9fb2a8; font: 500 9px var(--f-mono); }
+  .w { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+  .w-edge { fill: none; stroke: var(--edge); stroke-width: 6.5; stroke-linecap: round; stroke-linejoin: round; }
+  @media (prefers-reduced-motion: no-preference) { .steps li { transition: background 0.15s ease; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header style="display:grid;gap:8px">
+    <span class="eyebrow">LilyGO T-A7670G · PCB V1.4 · Phase 2</span>
+    <h1>WatchPack solder guide</h1>
+    <p class="lede">You'll make five joints on the board and two small parts off it: the SOS button with its two wires, and the buzzer driver. Every pin here comes from the wiring page we checked against LilyGO's V1.4 schematic and your board photos. Tick each step as you go; your ticks stay on this phone.</p>
+  </header>
+
+  <!-- ===================================================== WIRE MAP -->
+  <section>
+    <h2>The five connections</h2>
+    <div class="panel tablewrap">
+      <table class="map">
+        <thead><tr><th>Wire</th><th>Comes from</th><th>Board pin</th><th>Where</th></tr></thead>
+        <tbody>
+          <tr><td><i class="sw" style="background:var(--sig-btn)"></i>Button 1</td><td>either button lug</td><td><span class="pin">GND</span></td><td>PY edge, position 2</td></tr>
+          <tr><td><i class="sw" style="background:var(--sig-btn)"></i>Button 2</td><td>the other lug</td><td><span class="pin">IO32</span></td><td>PY edge, position 3</td></tr>
+          <tr><td><i class="sw" style="background:#d93a2b"></i>Red</td><td>buzzer + (long leg)</td><td><span class="pin">V_BAT</span></td><td>PY edge, position 16</td></tr>
+          <tr><td><i class="sw" style="background:var(--sig-buz)"></i>Yellow</td><td>free end of the 1 kΩ</td><td><span class="pin">IO18</span></td><td>PX edge, position 9</td></tr>
+          <tr><td><i class="sw" style="background:var(--wire-gnd)"></i>Black</td><td>transistor E leg</td><td><span class="pin">GND</span></td><td>PX edge, position 15</td></tr>
+        </tbody>
+      </table>
+      <p class="cap" style="padding:0">Use any jumper colours you have. These names just keep the three buzzer wires apart. Positions are always counted <b>1 → 16 from the ESP32 end</b>. The <b>PY edge</b> has the ON/OFF switch; the <b>PX edge</b> has the USB-C port.</p>
+    </div>
+  </section>
+
+  <!-- ===================================================== 0 PREP -->
+  <section data-group="prep">
+    <h2>Before you heat the iron <span class="count" data-count="prep"></span></h2>
+    <div class="panel">
+      <ul class="steps">
+        <li><input type="checkbox" id="prep-1" data-k="prep-1"><label class="txt" for="prep-1"><span><b>USB unplugged, 18650 out, switch OFF.</b></span><small>V_BAT is live whenever the cell is in, even with the switch off.</small></label></li>
+        <li><input type="checkbox" id="prep-2" data-k="prep-2"><label class="txt" for="prep-2"><span>Leave the antennas plugged in. Tuck both cables away from where you'll solder.</span><small>u.FL plugs survive only about 30 plug-ins, so don't unplug them just for this.</small></label></li>
+        <li><input type="checkbox" id="prep-3" data-k="prep-3"><label class="txt" for="prep-3"><span>Lay out: 1 kΩ resistor, BC337 transistor, buzzer, NC button, 3 female–female jumpers, the header strip, heat-shrink (or electrical tape), one AA cell.</span><small>1 kΩ colour bands: <b>brown · black · red</b> (+ gold). On a 5-band resistor: brown · black · black · brown.</small></label></li>
+        <li><input type="checkbox" id="prep-4" data-k="prep-4"><label class="txt" for="prep-4"><span>Iron at 330–350 °C if it has a dial. Wipe the tip on a damp sponge and put a little solder on it.</span><small>A shiny tip moves heat; a dull grey one doesn't.</small></label></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===================================================== 1 BUTTON -->
+  <section data-group="btn">
+    <span class="eyebrow">Part 1 · off the board</span>
+    <h2>SOS button wires <span class="count" data-count="btn"></span></h2>
+    <div class="fig">
+      <svg viewBox="0 0 400 230" role="img" aria-label="NC button with two wires, and the AA-cell test with the voltmeter">
+        <!-- left: the finished button -->
+        <text x="100" y="20" text-anchor="middle" class="tcap">Finished button</text>
+        <rect x="60" y="40" width="80" height="80" rx="10" fill="#2b2f2d" stroke="#111"/>
+        <circle cx="100" cy="80" r="24" fill="#121413" stroke="#5b625e" stroke-width="2"/>
+        <text x="100" y="140" text-anchor="middle" class="tm">NC button</text>
+        <rect x="74" y="120" width="8" height="14" fill="var(--copper)"/>
+        <rect x="118" y="120" width="8" height="14" fill="var(--copper)"/>
+        <path class="w" style="stroke:var(--sig-btn)" d="M78 134 V176 H40 V200"/>
+        <path class="w" style="stroke:var(--sig-btn)" d="M122 134 V176 H160 V200"/>
+        <rect x="70" y="128" width="16" height="22" rx="3" fill="var(--mask)" opacity="0.35"/>
+        <rect x="114" y="128" width="16" height="22" rx="3" fill="var(--mask)" opacity="0.35"/>
+        <text x="40" y="218" text-anchor="middle" class="tbtn">→ PY2 GND</text>
+        <text x="160" y="218" text-anchor="middle" class="tbtn">→ PY3 IO32</text>
+
+        <!-- right: AA test -->
+        <text x="300" y="20" text-anchor="middle" class="tcap">Test with AA + voltmeter</text>
+        <rect x="222" y="44" width="56" height="24" rx="5" fill="#c9a43a" stroke="#6b5414"/>
+        <rect x="278" y="50" width="5" height="12" rx="1" fill="#8b8f8c"/>
+        <text x="250" y="60" text-anchor="middle" style="fill:#2a2105;font:700 10px var(--f-mono)">AA 1.5V</text>
+        <text x="286" y="42" class="tm">+</text><text x="214" y="42" class="tm">−</text>
+        <!-- + to button -->
+        <path class="w" style="stroke:var(--sig-btn)" d="M283 56 H330 V96"/>
+        <rect x="314" y="96" width="32" height="32" rx="6" fill="#2b2f2d" stroke="#111"/>
+        <circle cx="330" cy="112" r="9" fill="#121413"/>
+        <path class="w" style="stroke:var(--sig-btn)" d="M330 128 V214 H290 V200"/>
+        <!-- meter -->
+        <rect x="236" y="134" width="70" height="66" rx="8" fill="#e8b923" stroke="#6b5414"/>
+        <rect x="244" y="142" width="54" height="22" rx="3" fill="#cfd8c8"/>
+        <text x="271" y="158" text-anchor="middle" style="fill:#18201b;font:700 12px var(--f-mono)">1.50</text>
+        <text x="290" y="192" text-anchor="middle" class="onpcb-s" style="fill:#2a2105">V+</text><text x="252" y="192" text-anchor="middle" class="onpcb-s" style="fill:#2a2105">COM</text>
+        <!-- COM back to AA − -->
+        <path class="w-edge" d="M252 200 V222 H210 V56 H222"/>
+        <path class="w" style="stroke:var(--wire-gnd)" d="M252 200 V222 H210 V56 H222"/>
+        <text x="352" y="170" class="tm">idle:</text>
+        <text x="352" y="184" class="t">≈1.5 V</text>
+        <text x="352" y="204" class="tm">held:</text>
+        <text x="352" y="218" class="t">0 V</text>
+      </svg>
+      <p class="cap">Normally closed means the button conducts until you press it. Wire either lug to either pin; it doesn't matter which.</p>
+    </div>
+    <div class="panel">
+      <ul class="steps">
+        <li><input type="checkbox" id="btn-1" data-k="btn-1"><label class="txt" for="btn-1"><span>Cut one jumper in the middle. Each half keeps its female plug. Strip 5 mm off each cut end and twist the strands.</span></label></li>
+        <li><input type="checkbox" id="btn-2" data-k="btn-2"><label class="txt" for="btn-2"><span><b>Slide heat-shrink onto both wires first.</b></span><small>Once the wire is soldered it can't go on any more. That's the most common mistake.</small></label></li>
+        <li><input type="checkbox" id="btn-3" data-k="btn-3"><label class="txt" for="btn-3"><span>Tin each wire end and each lug with a little solder. Then hold a wire on its lug and touch the iron to it for a second.</span></label></li>
+        <li><input type="checkbox" id="btn-4" data-k="btn-4"><label class="txt" for="btn-4"><span>Pull each wire gently. Then slide the heat-shrink over the joints and shrink it (iron's side, a lighter, or a hair dryer).</span></label></li>
+        <li><input type="checkbox" id="btn-5" data-k="btn-5"><label class="txt" for="btn-5"><span><b>AA test:</b> the voltmeter should show about 1.5 V while the button is idle and 0 V while you hold it.</span><small>The voltmeter's black probe goes to the AA's − end. Use the AA, never the 18650. Do this before the button goes anywhere near the board.</small></label></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===================================================== 2 BUZZER DRIVER -->
+  <section data-group="buz">
+    <span class="eyebrow">Part 2 · off the board</span>
+    <h2>Buzzer driver <span class="count" data-count="buz"></span></h2>
+    <div class="fig">
+      <svg viewBox="0 0 400 360" role="img" aria-label="BC337 with the 1 kOhm on the base, the buzzer minus on the collector, and three wires">
+        <!-- transistor, flat face toward you -->
+        <path d="M160 40 H240 V110 H160 Z" fill="#1c1c1c" stroke="#000"/>
+        <text x="200" y="68" text-anchor="middle" style="fill:#e9ece9;font:700 13px var(--f-mono)">BC337</text>
+        <text x="200" y="86" text-anchor="middle" style="fill:#c3c9c4;font:600 11px var(--f-mono)">-25</text>
+        <text x="200" y="30" text-anchor="middle" class="tm">flat face toward you, legs down</text>
+        <!-- legs -->
+        <path d="M175 110 V200" stroke="#b9bfbb" stroke-width="3"/>
+        <path d="M200 110 V200" stroke="#b9bfbb" stroke-width="3"/>
+        <path d="M225 110 V200" stroke="#b9bfbb" stroke-width="3"/>
+        <text x="175" y="132" text-anchor="middle" class="t" style="paint-order:stroke;stroke:var(--panel);stroke-width:3">C</text>
+        <text x="200" y="132" text-anchor="middle" class="t" style="paint-order:stroke;stroke:var(--panel);stroke-width:3">B</text>
+        <text x="225" y="132" text-anchor="middle" class="t" style="paint-order:stroke;stroke:var(--panel);stroke-width:3">E</text>
+
+        <!-- buzzer -->
+        <circle cx="70" cy="90" r="42" fill="#151515" stroke="#000"/>
+        <circle cx="70" cy="90" r="8" fill="#050505" stroke="#444"/>
+        <text x="52" y="72" style="fill:#e9ece9;font:700 16px var(--f-mono)">+</text>
+        <text x="70" y="148" text-anchor="middle" class="tm">buzzer, top view</text>
+        <!-- + long leg -->
+        <path d="M58 132 V170" stroke="#b9bfbb" stroke-width="3"/>
+        <text x="40" y="164" text-anchor="end" class="tm">+ long</text>
+        <!-- − short leg bent to C -->
+        <path d="M84 132 V160 Q84 200 120 200 H175" stroke="#b9bfbb" stroke-width="3" fill="none"/>
+        <text x="96" y="176" class="tm">− short</text>
+
+        <!-- joints with heat-shrink -->
+        <rect x="165" y="188" width="20" height="26" rx="4" fill="var(--mask)" opacity="0.35"/>
+        <rect x="190" y="188" width="20" height="26" rx="4" fill="var(--mask)" opacity="0.35"/>
+        <rect x="215" y="188" width="20" height="26" rx="4" fill="var(--mask)" opacity="0.35"/>
+        <circle cx="175" cy="200" r="4" fill="var(--copper)"/>
+        <circle cx="200" cy="200" r="4" fill="var(--copper)"/>
+        <circle cx="225" cy="200" r="4" fill="var(--copper)"/>
+
+        <!-- 1k resistor on B -->
+        <path d="M200 200 V222" stroke="#b9bfbb" stroke-width="2.5"/>
+        <rect x="191" y="222" width="18" height="46" rx="8" fill="#d8c3a0" stroke="#8a7454"/>
+        <rect x="191" y="229" width="18" height="5" fill="#6b3d17"/>
+        <rect x="191" y="238" width="18" height="5" fill="#111"/>
+        <rect x="191" y="247" width="18" height="5" fill="#c62d1f"/>
+        <rect x="191" y="258" width="18" height="4" fill="#c8a036"/>
+        <text x="216" y="250" class="t">1 kΩ</text>
+        <path d="M200 268 V284" stroke="#b9bfbb" stroke-width="2.5"/>
+        <rect x="190" y="276" width="20" height="20" rx="4" fill="var(--mask)" opacity="0.35"/>
+
+        <!-- wires -->
+        <path class="w" style="stroke:#d93a2b" d="M58 170 V330"/>
+        <path class="w" style="stroke:var(--sig-buz)" d="M200 284 V330"/>
+        <path class="w-edge" d="M225 200 Q225 236 260 236 H330 V330"/>
+        <path class="w" style="stroke:var(--wire-gnd)" d="M225 200 Q225 236 260 236 H330 V330"/>
+
+        <text x="58" y="348" text-anchor="middle" class="t" style="fill:#d93a2b">red → PY16 V_BAT</text>
+        <text x="200" y="348" text-anchor="middle" class="tbuz">yellow → PX9 IO18</text>
+        <text x="330" y="348" text-anchor="middle" class="t">black → PX15 GND</text>
+      </svg>
+      <p class="cap">How it works: IO18 goes HIGH → the transistor switches on → the buzzer's − side connects to ground → beep. The buzzer's current comes from the battery, not the ESP32 pin, and the 1 kΩ keeps IO18 safe.</p>
+    </div>
+    <div class="panel">
+      <ul class="steps">
+        <li><input type="checkbox" id="buz-1" data-k="buz-1"><label class="txt" for="buz-1"><span>Hold the transistor with the <b>flat printed face toward you, legs down</b>. Left to right: <span class="pin">C</span> <span class="pin">B</span> <span class="pin">E</span>.</span><small>That order is only for the BC337. An S8050 or 2N2222 is the mirror image (E B C).</small></label></li>
+        <li><input type="checkbox" id="buz-2" data-k="buz-2"><label class="txt" for="buz-2"><span>Bend the three legs slightly apart so they can't touch. Keep them long; don't trim them yet.</span></label></li>
+        <li><input type="checkbox" id="buz-3" data-k="buz-3"><label class="txt" for="buz-3"><span>Cut the other two jumpers in half (you'll use three of the four halves). Strip and twist the ends. <b>Heat-shrink on every wire and leg before soldering.</b></span></label></li>
+        <li><input type="checkbox" id="buz-4" data-k="buz-4"><label class="txt" for="buz-4"><span>Solder the 1 kΩ to the <b>middle leg (B)</b>. Then solder the <b>yellow</b> wire to the resistor's other end.</span><small>Work fast: about 2 seconds per joint. Long heat can damage the transistor.</small></label></li>
+        <li><input type="checkbox" id="buz-5" data-k="buz-5"><label class="txt" for="buz-5"><span>Solder the buzzer's <b>short leg (−)</b> to the <b>left leg (C)</b>.</span><small>The long leg and the "+" on the sticker mark the + side.</small></label></li>
+        <li><input type="checkbox" id="buz-6" data-k="buz-6"><label class="txt" for="buz-6"><span>Solder the <b>red</b> wire to the buzzer's <b>long leg (+)</b> and the <b>black</b> wire to the <b>right leg (E)</b>.</span></label></li>
+        <li><input type="checkbox" id="buz-7" data-k="buz-7"><label class="txt" for="buz-7"><span>Shrink the sleeves so no bare metal shows anywhere. Peel the "REMOVE SEAL AFTER WASHING" sticker off the buzzer; it's louder without it.</span></label></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===================================================== 3 HEADER PINS -->
+  <section data-group="pins">
+    <span class="eyebrow">Part 3 · on the board</span>
+    <h2>Five header pins <span class="count" data-count="pins"></span></h2>
+    <p class="lede">Each pin goes in from the <b>back</b> (battery side), where the labels are, and gets soldered on the <b>front</b>. Flipping the board swaps left and right, so find the edges by the switch and the USB-C port, never by "left" or "right".</p>
+
+    <div class="fig">
+      <svg viewBox="0 0 400 560" role="img" aria-label="Back of the board: insert pins at PX9, PX15, PY2, PY3, PY16">
+        <text x="200" y="18" text-anchor="middle" class="tcap">1 · BACK — insert the pins here</text>
+        <text x="200" y="34" text-anchor="middle" class="tm">battery side · ESP32 end at the top</text>
+        <rect x="134" y="44" width="132" height="470" rx="12" fill="#1d2420" stroke="#3f4c45" stroke-width="2"/>
+        <rect x="170" y="62" width="60" height="436" rx="14" fill="#0c100e" stroke="#4b5852"/>
+        <text transform="translate(200,290) rotate(-90)" text-anchor="middle" class="onpcb">18650 holder</text>
+        <rect x="234" y="150" width="12" height="230" rx="3" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text transform="translate(240,265) rotate(-90)" text-anchor="middle" class="onpcb-s" style="fill:#b9a6fb">GPS</text>
+        <text x="150" y="58" text-anchor="middle" class="onpcb">PX</text>
+        <text x="252" y="58" text-anchor="middle" class="onpcb">PY</text>
+        <g id="backpins"></g>
+        <text x="200" y="534" text-anchor="middle" class="tm">▼ modem end</text>
+        <text x="70" y="552" text-anchor="middle" class="tm">PX = USB-C edge</text>
+        <text x="330" y="552" text-anchor="middle" class="tm">PY = switch edge</text>
+      </svg>
+      <p class="cap"><b>Bold labels</b> are printed and readable on your board. <i>Grey italic</i> ones are hidden under the holder or the GPS board. Red labels are neighbours you must keep solder away from.</p>
+    </div>
+
+    <div class="fig">
+      <svg viewBox="0 0 400 600" role="img" aria-label="Front of the board: solder the five pin tails, keep away from the neighbours">
+        <text x="200" y="18" text-anchor="middle" class="tcap">2 · FRONT — solder here</text>
+        <text x="200" y="34" text-anchor="middle" class="tm">component side · ESP32 end at the top</text>
+        <rect x="134" y="44" width="132" height="520" rx="12" fill="#1d2420" stroke="#3f4c45" stroke-width="2"/>
+        <rect x="166" y="48" width="68" height="16" rx="2" fill="#38433d"/>
+        <rect x="166" y="64" width="60" height="120" rx="4" fill="#c4ccc6" stroke="#7f8a84"/>
+        <text x="196" y="128" text-anchor="middle" style="fill:#2b322e;font:700 10px var(--f-mono)">ESP32</text>
+        <rect x="230" y="98" width="9" height="9" rx="2" fill="#d1d5d3"/>
+        <rect x="230" y="128" width="9" height="9" rx="2" fill="#d1d5d3"/>
+        <rect x="170" y="228" width="60" height="70" rx="4" fill="#173326" stroke="#1f6a4c"/>
+        <text x="200" y="268" text-anchor="middle" class="onpcb-s">power</text>
+        <rect x="170" y="420" width="60" height="80" rx="4" fill="#eceeed" stroke="#9ca3a0"/>
+        <text x="200" y="465" text-anchor="middle" style="fill:#2b322e;font:700 9.5px var(--f-mono)">A7670G</text>
+        <!-- landmarks below position 16 -->
+        <rect x="128" y="490" width="12" height="22" rx="2" fill="#9aa19d" stroke="#4c5450"/>
+        <text x="122" y="505" text-anchor="end" class="tm">ON/OFF switch</text>
+        <rect x="260" y="528" width="12" height="26" rx="3" fill="#c4ccc6" stroke="#7f8a84"/>
+        <text x="280" y="545" class="tm">USB-C</text>
+        <text x="150" y="58" text-anchor="middle" class="onpcb">PY</text>
+        <text x="252" y="58" text-anchor="middle" class="onpcb">PX</text>
+        <g id="frontpins"></g>
+        <text x="200" y="584" text-anchor="middle" class="tm">▼ modem end</text>
+      </svg>
+      <p class="cap">The two small squares by the ESP32 are the RST and IO0 buttons, on the PX edge. On the front you'll see only five pin tails poking through. Those are your five joints. The red rings are the holes next to them; a solder bridge onto one of those is the mistake to avoid.</p>
+    </div>
+
+    <div class="warn">
+      <span><b>Watch these neighbours.</b> A blob of solder that reaches the next hole causes:</span>
+      <ul class="plain">
+        <li><span class="pin">PY2</span> next to <span class="pin">PY1</span> → 3.3 V shorted to GND.</li>
+        <li><span class="pin">PY16</span> next to <span class="pin">PY15</span> (IO12, power enable) → battery voltage straight onto an ESP32 pin.</li>
+        <li><span class="pin">PX9</span> next to <span class="pin">PX8</span> (GPS wake) and <span class="pin">PX10</span> (modem reset) → GPS or modem stops working.</li>
+        <li><span class="pin">PX15</span> next to <span class="pin">PX16</span> (USB 5 V) and <span class="pin">PX14</span> (RST) → 5 V short, or a board stuck in reset.</li>
+      </ul>
+    </div>
+
+    <div class="fig">
+      <svg viewBox="0 0 400 140" role="img" aria-label="Good joint is a cone; too little leaves the hole showing; a bridge touches the next pad">
+        <g transform="translate(20,0)">
+          <rect x="0" y="88" width="100" height="10" fill="#1d2420"/>
+          <rect x="18" y="84" width="24" height="5" fill="var(--copper)"/>
+          <rect x="58" y="84" width="24" height="5" fill="var(--copper)" opacity="0.5"/>
+          <rect x="28" y="36" width="4" height="52" fill="#c9cec9"/>
+          <path d="M18 85 Q30 80 30 50 Q30 80 42 85 Z" fill="#cfd4d0" stroke="#8e958f"/>
+          <text x="50" y="118" text-anchor="middle" class="t" style="fill:var(--mask)">good: shiny cone</text>
+        </g>
+        <g transform="translate(150,0)">
+          <rect x="0" y="88" width="100" height="10" fill="#1d2420"/>
+          <rect x="18" y="84" width="24" height="5" fill="var(--copper)"/>
+          <rect x="58" y="84" width="24" height="5" fill="var(--copper)" opacity="0.5"/>
+          <rect x="28" y="36" width="4" height="52" fill="#c9cec9"/>
+          <path d="M26 85 Q30 82 30 76 Q30 82 34 85 Z" fill="#cfd4d0" stroke="#8e958f"/>
+          <text x="50" y="118" text-anchor="middle" class="t">too little: add more</text>
+        </g>
+        <g transform="translate(280,0)">
+          <rect x="0" y="88" width="100" height="10" fill="#1d2420"/>
+          <rect x="18" y="84" width="24" height="5" fill="var(--copper)"/>
+          <rect x="58" y="84" width="24" height="5" fill="var(--copper)"/>
+          <rect x="28" y="36" width="4" height="52" fill="#c9cec9"/>
+          <path d="M14 86 Q20 58 34 60 Q60 62 84 86 Z" fill="#cfd4d0" stroke="#8e958f"/>
+          <text x="50" y="118" text-anchor="middle" class="tdan">bridge: wick it off</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="panel">
+      <ul class="steps">
+        <li><input type="checkbox" id="pins-1" data-k="pins-1"><label class="txt" for="pins-1"><span><b>Take a photo of the back</b> before you start.</span></label></li>
+        <li><input type="checkbox" id="pins-2" data-k="pins-2"><label class="txt" for="pins-2"><span>Snap five <b>single</b> pins off the strip (bend at the plastic, one pin each).</span><small>With no pin on 3.3 V, VBUS, IO4, IO5 or IO12, a wire physically can't go on the wrong one later.</small></label></li>
+        <li><input type="checkbox" id="pins-3" data-k="pins-3"><label class="txt" for="pins-3"><span>From the <b>back</b>, push the pins into <span class="pin">PY2</span> <span class="pin">PY3</span> <span class="pin">PY16</span> on the switch edge and <span class="pin">PX9</span> <span class="pin">PX15</span> on the USB-C edge. The short end goes into the hole.</span><small>Check by label: PY2 = <code>GND</code>, PY3 = <code>IO32</code>, PY16 = <code>V_BAT</code> (last hole, modem end), PX15 = <code>GND</code> between <code>RST</code> and <code>VBUS</code>. PX9's label is hidden: start at the readable <code>IO39</code> and go <b>two</b> holes toward the ESP32, skipping IO5.</small></label></li>
+        <li><input type="checkbox" id="pins-4" data-k="pins-4"><label class="txt" for="pins-4"><span>Lay a strip of masking tape across the pins' plastic collars so they can't fall out, then flip the board front-up.</span><small>The board rests on the battery holder, so the pins hang free. That's what the tape is for.</small></label></li>
+        <li><input type="checkbox" id="pins-5" data-k="pins-5"><label class="txt" for="pins-5"><span>Solder one pin first, then check it stands straight. Then do the other four.</span><small>Tip on the pad <i>and</i> the pin, feed solder into the joint (not onto the iron), about 1 s, solder away, iron away. 3 s maximum per joint.</small></label></li>
+        <li><input type="checkbox" id="pins-6" data-k="pins-6"><label class="txt" for="pins-6"><span>Use a small amount on <span class="pin">PX9</span> and <span class="pin">PY16</span>. Their neighbours are the risky ones.</span><small>If you bridge two holes: clean the tip, add a dab of fresh solder, and drag the blob off with the iron.</small></label></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===================================================== 4 CHECKS -->
+  <section data-group="chk">
+    <span class="eyebrow">Part 4 · before the battery goes in</span>
+    <h2>Check with the voltmeter <span class="count" data-count="chk"></span></h2>
+    <div class="panel">
+      <ul class="steps">
+        <li><input type="checkbox" id="chk-1" data-k="chk-1"><label class="txt" for="chk-1"><span>Zoom in with your phone on all five joints on the front. Every joint should be a small shiny cone, and nothing should touch the next hole.</span></label></li>
+        <li><input type="checkbox" id="chk-2" data-k="chk-2"><label class="txt" for="chk-2"><span><b>Send Claude the photos</b>: front joints up close, the buzzer driver from both sides, and the back with the pins.</span><small>Wait for the OK before powering up.</small></label></li>
+        <li><input type="checkbox" id="chk-3" data-k="chk-3"><label class="txt" for="chk-3"><span>First power-up: <b>USB-C only, 18650 still out</b>, no wires plugged on the pins yet.</span><small>The USB charger limits the current, so a hidden short can't do what the battery could.</small></label></li>
+        <li><input type="checkbox" id="chk-4" data-k="chk-4"><label class="txt" for="chk-4"><span>Black probe on <span class="pin">PX15</span> (GND), red probe on <span class="pin">PY16</span> (V_BAT): about <b>3.5–4.3 V</b>.</span><small>Reading 0 V or the laptop complains about the USB port: unplug at once, a joint is shorted. If the board doesn't start on USB alone at all, tell Claude before adding the battery.</small></label></li>
+        <li><input type="checkbox" id="chk-5" data-k="chk-5"><label class="txt" for="chk-5"><span>Unplug USB. Plug the wires on: button → <span class="pin">PY2</span> + <span class="pin">PY3</span>, red → <span class="pin">PY16</span>, yellow → <span class="pin">PX9</span>, black → <span class="pin">PX15</span>.</span></label></li>
+        <li><input type="checkbox" id="chk-6" data-k="chk-6"><label class="txt" for="chk-6"><span>USB back in. Black probe on <span class="pin">PY2</span>, red on <span class="pin">PY3</span>: <b>0 V</b> idle, about <b>3.3 V</b> while you hold the button.</span></label></li>
+        <li><input type="checkbox" id="chk-7" data-k="chk-7"><label class="txt" for="chk-7"><span>Claude flashes the pin test: <b>3 short beeps</b> at boot, and the buzzer sounds while you hold the SOS button.</span></label></li>
+        <li><input type="checkbox" id="chk-8" data-k="chk-8"><label class="txt" for="chk-8"><span>Switch OFF, insert the 18650 (flat − end toward the ESP32 end), switch ON.</span></label></li>
+      </ul>
+    </div>
+  </section>
+
+  <p class="cap" style="text-align:center">Source: <code>guardian-pack/docs/lilygo-wiring.html</code> (LilyGO T-A7670X V1.4 schematic, connectors PX and PY) · firmware <code>04_pins_test</code></p>
+</div>
+
+<script>
+  // Header positions 1–16 from the ESP32 end (LilyGO T-A7670X V1.4 schematic, verified 2026-10-05).
+  // role: solder | protect | other · shown: label readable on the back silkscreen
+  const PX = [
+    ["UART0_TX", "other", 1], ["UART0_RX", "other", 1], ["VDD3V3", "other", 1], ["GND", "other", 0],
+    ["IO22", "other", 0], ["IO21", "other", 0], ["IO23", "other", 0], ["IO19", "protect", 0, "GPS wake"],
+    ["IO18", "solder-buz", 0, "yellow"], ["IO5", "protect", 0, "modem rst"], ["IO39", "other", 1], ["IO36", "other", 1],
+    ["IO00", "other", 1], ["RST", "protect", 1, ""], ["GND", "solder-gnd", 1, "black"], ["VBUS", "protect", 1, "USB 5 V"],
+  ];
+  const PY = [
+    ["V3V3", "protect", 1, "3.3 V"], ["GND", "solder-btn", 1, "button"], ["IO32", "solder-btn", 1, "button"], ["33", "other", 1],
+    ["IO34", "other", 0], ["35", "other", 1], ["25", "other", 1], ["IO26", "other", 0],
+    ["IO27", "other", 0], ["IO4", "other", 0], ["IO2", "other", 0], ["IO15", "other", 0],
+    ["IO14", "other", 0], ["IO13", "other", 1], ["IO12", "protect", 1, "pwr-en"], ["V_BAT", "solder-red", 1, "red"],
+  ];
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, text) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    return e;
+  };
+  const colorOf = (role) => ({
+    "solder-btn": "var(--sig-btn)", "solder-buz": "var(--sig-buz)", "solder-red": "#d93a2b", "solder-gnd": "var(--ink)",
+  })[role];
+
+  // side: "left" labels go to the left of the column, "right" to the right.
+  function column(g, pins, edge, x, side, y0, step, front) {
+    pins.forEach(([label, role, shown, note], i) => {
+      const pos = i + 1, y = y0 + i * step;
+      const solder = role.startsWith("solder"), protect = role === "protect";
+      if (solder) {
+        g.append(el("circle", { cx: x, cy: y, r: 8.5, fill: colorOf(role), stroke: "#0b0f0d", "stroke-width": 1.2 }));
+        g.append(el("rect", { x: x - 2.6, y: y - 2.6, width: 5.2, height: 5.2, fill: "#e8d9a8" }));
+      } else {
+        g.append(el("circle", { cx: x, cy: y, r: 5, fill: "#0b0f0d", stroke: "#c9a64e", "stroke-width": 1.5 }));
+        if (protect) g.append(el("circle", { cx: x, cy: y, r: 9, fill: "none", stroke: "var(--danger)", "stroke-width": 1.6, "stroke-dasharray": "3 2" }));
+      }
+      const anchor = side === "left" ? "end" : "start";
+      const tx = side === "left" ? x - 22 : x + 22;
+      let cls = solder ? (role === "solder-btn" ? "tbtn" : role === "solder-buz" ? "tbuz" : "t") : protect ? "tdan" : shown ? "tm" : "th";
+      let text;
+      if (front) {
+        text = solder ? `${edge}${pos} ${label} ← solder` : protect ? `${edge}${pos} ${note || label}` : `${pos}`;
+        if (!solder && !protect) cls = "tm";
+      } else {
+        text = solder ? `${pos} · ${label} ● ${note}` : protect ? `${pos} · ${label} ${note} ✕`.replace("  ", " ") : `${pos} · ${label}`;
+      }
+      const t = el("text", { x: tx, y: y + 3.8, "text-anchor": anchor, class: cls }, text);
+      if (role === "solder-red") t.setAttribute("style", "fill:#d93a2b");
+      g.append(t);
+    });
+  }
+  column(document.getElementById("backpins"), PX, "PX", 150, "left", 80, 26, false);
+  column(document.getElementById("backpins"), PY, "PY", 252, "right", 80, 26, false);
+  column(document.getElementById("frontpins"), PY, "PY", 150, "left", 80, 26, true);
+  column(document.getElementById("frontpins"), PX, "PX", 252, "right", 80, 26, true);
+
+  // checklist: per-viewer convenience only
+  const KEY = "wp-solder-";
+  const boxes = [...document.querySelectorAll("input[data-k]")];
+  function refresh() {
+    document.querySelectorAll("[data-count]").forEach((c) => {
+      const group = boxes.filter((b) => b.dataset.k.startsWith(c.dataset.count + "-"));
+      const done = group.filter((b) => b.checked).length;
+      c.textContent = `${done}/${group.length}`;
+      c.classList.toggle("done", done === group.length);
+    });
+  }
+  boxes.forEach((b) => {
+    try { b.checked = localStorage.getItem(KEY + b.dataset.k) === "1"; } catch (e) {}
+    b.addEventListener("change", () => {
+      try { localStorage.setItem(KEY + b.dataset.k, b.checked ? "1" : "0"); } catch (e) {}
+      refresh();
+    });
+  });
+  refresh();
+</script>
+</body>
+</html>

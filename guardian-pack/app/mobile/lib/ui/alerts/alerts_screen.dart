@@ -112,27 +112,61 @@ class _ZonesTab extends ConsumerWidget {
                 icon: Symbols.battery_1_bar_rounded,
                 color: WpColors.amber,
                 title: 'Low battery alert',
-                detail: 'Trigger: ${tr.lowBatteryPct}%',
+                detail: 'Trigger: ${tr.lowBatteryPct}%  ·  tap to change',
                 value: tr.lowBatteryOn,
                 onChanged: (v) => actions.updateTriggers({'lowBatteryOn': v}),
+                onTap: () => _pickLevel(
+                  context,
+                  title: 'Low battery alert at',
+                  options: const [10, 15, 20, 30, 40, 50],
+                  label: (v) => '$v%',
+                  current: tr.lowBatteryPct,
+                  onPick: (v) => actions.updateTriggers({'lowBatteryPct': v, 'lowBatteryOn': true}),
+                ),
               ),
               Divider(color: context.wp.line),
               _TriggerRow(
                 icon: Symbols.signal_cellular_off_rounded,
                 color: WpColors.amber,
                 title: 'Signal loss notification',
-                detail: 'Trigger: offline for ${tr.signalLossMin} min',
+                detail: 'Trigger: offline for ${tr.signalLossMin} min  ·  tap to change',
                 value: tr.signalLossOn,
                 onChanged: (v) => actions.updateTriggers({'signalLossOn': v}),
+                onTap: () => _pickLevel(
+                  context,
+                  title: 'Signal loss alert after',
+                  options: const [5, 10, 15, 30, 60],
+                  label: (v) => '$v minutes offline',
+                  current: tr.signalLossMin,
+                  onPick: (v) => actions.updateTriggers({'signalLossMin': v, 'signalLossOn': true}),
+                ),
               ),
               Divider(color: context.wp.line),
               _TriggerRow(
                 icon: Symbols.warning_rounded,
                 color: WpColors.red,
                 title: 'Off-route alert',
-                detail: 'Deviation from the usual way home',
+                detail: 'Far from everywhere ${device?.name ?? 'your child'} usually goes. Learns over 3 days.',
                 value: tr.offRouteOn,
                 onChanged: (v) => actions.updateTriggers({'offRouteOn': v}),
+              ),
+              Divider(color: context.wp.line),
+              _TriggerRow(
+                icon: Symbols.thunderstorm_rounded,
+                color: WpColors.amber,
+                title: 'Severe weather',
+                detail: 'Thunderstorm, heavy rain or strong wind where ${device?.name ?? 'your child'} is',
+                value: tr.weatherOn,
+                onChanged: (v) => actions.updateTriggers({'weatherOn': v}),
+              ),
+              Divider(color: context.wp.line),
+              const _TriggerRow(
+                icon: Symbols.earthquake_rounded,
+                color: WpColors.red,
+                title: 'Earthquakes',
+                detail: 'Always on — PHIVOLCS quakes M4 and up nearby',
+                value: true,
+                onChanged: null,
               ),
               Divider(color: context.wp.line),
               const _TriggerRow(
@@ -163,6 +197,36 @@ class _ZonesTab extends ConsumerWidget {
       ),
     );
     if (ok == true) await actions.deleteZone(z.id);
+  }
+
+  Future<void> _pickLevel(
+    BuildContext context, {
+    required String title,
+    required List<int> options,
+    required String Function(int) label,
+    required int current,
+    required ValueChanged<int> onPick,
+  }) async {
+    final v = await showModalBottomSheet<int>(
+      context: context,
+      showDragHandle: true,
+      builder: (c) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: WpSpace.s),
+            child: Text(title, style: c.text.titleSmall),
+          ),
+          for (final o in options)
+            ListTile(
+              title: Text(label(o)),
+              trailing: o == current ? const Icon(Symbols.check_rounded, color: WpColors.cyan, size: 20) : null,
+              onTap: () => Navigator.pop(c, o),
+            ),
+          const SizedBox(height: WpSpace.s),
+        ]),
+      ),
+    );
+    if (v != null && v != current) onPick(v);
   }
 }
 
@@ -204,27 +268,31 @@ class _ZoneCard extends StatelessWidget {
 }
 
 class _TriggerRow extends StatelessWidget {
-  const _TriggerRow({required this.icon, required this.color, required this.title, required this.detail, required this.value, required this.onChanged});
+  const _TriggerRow({required this.icon, required this.color, required this.title, required this.detail, required this.value, required this.onChanged, this.onTap});
   final IconData icon;
   final Color color;
   final String title, detail;
   final bool value;
   final ValueChanged<bool>? onChanged;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(WpSpace.l, WpSpace.s, WpSpace.s, WpSpace.s),
-        child: Row(children: [
-          IconDisc(icon, color: color, size: 40),
-          const SizedBox(width: WpSpace.m),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title, style: context.text.bodyMedium),
-              Text(detail, style: context.text.bodySmall),
-            ]),
-          ),
-          Switch(value: value, onChanged: onChanged),
-        ]),
+  Widget build(BuildContext context) => InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(WpSpace.l, WpSpace.s, WpSpace.s, WpSpace.s),
+          child: Row(children: [
+            IconDisc(icon, color: color, size: 40),
+            const SizedBox(width: WpSpace.m),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title, style: context.text.bodyMedium),
+                Text(detail, style: context.text.bodySmall),
+              ]),
+            ),
+            Switch(value: value, onChanged: onChanged),
+          ]),
+        ),
       );
 }
 

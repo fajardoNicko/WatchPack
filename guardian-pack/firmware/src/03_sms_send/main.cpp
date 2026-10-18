@@ -5,6 +5,10 @@
 //
 // Needs: include/secrets.h (copy secrets.example.h), LTE + GPS antennas, SIM with load,
 // battery in, switch ON.
+//
+// Field test (no laptop): with FIELD_TEST_TEXTS on, the first contact also gets a text when
+// the modem is up, one at the first GPS fix (with the time it took), and one if there's
+// still no fix after FIELD_NO_FIX_MS (with what the antenna hears).
 
 #include <Arduino.h>
 #include <TinyGPS++.h>
@@ -14,9 +18,28 @@
 #define SerialAT  Serial1
 #define SerialGPS Serial2
 
+constexpr bool FIELD_TEST_TEXTS = true;
+constexpr uint32_t FIELD_NO_FIX_MS = 10UL * 60 * 1000;
+
 TinyGPSPlus gps;
 const char* const contacts[] = SOS_CONTACTS;
 constexpr size_t contactCount = sizeof(contacts) / sizeof(contacts[0]);
+
+// Satellites in view + signal strength from the GSV sentences (same as 02_gps_l76k).
+TinyGPSCustom gpsInView(gps, "GPGSV", 3);
+TinyGPSCustom bdInView(gps, "GBGSV", 3);
+TinyGPSCustom gSnr[4] = {{gps, "GPGSV", 7}, {gps, "GPGSV", 11}, {gps, "GPGSV", 15}, {gps, "GPGSV", 19}};
+TinyGPSCustom bSnr[4] = {{gps, "GBGSV", 7}, {gps, "GBGSV", 11}, {gps, "GBGSV", 15}, {gps, "GBGSV", 19}};
+int usable = 0, bestSnr = 0;          // this second
+int lastUsable = 0, lastBest = 0;     // previous full second
+static void tally(TinyGPSCustom* arr) {
+    for (int i = 0; i < 4; i++) {
+        if (!arr[i].isUpdated()) continue;
+        const int v = atoi(arr[i].value());
+        if (v >= 25) usable++;
+        if (v > bestSnr) bestSnr = v;
+    }
+}
 
 // ---------- modem helpers ----------
 static String at(const char* cmd, uint32_t timeoutMs = 2000, const char* until = "OK") {
@@ -121,12 +144,49 @@ void setup() {
     Serial.print("registering");
     for (int i = 0; i < 45 && !registered(); i++) { Serial.print('.'); delay(2000); }
     Serial.println(registered() ? " on network" : " NOT registered (will still try)");
-    Serial.printf("signal: %s\n", at("AT+CSQ").c_str());
-    Serial.println("READY. Hold the IO0 button for 1 s to send the SOS text.");
+    const String csq = at("AT+CSQ");
+    Serial.printf("signal: %s\n", csq.c_str());
+    if (FIELD_TEST_TEXTS) {
+        const int p = csq.indexOf("+CSQ:");
+        String t = "WatchPack test: modem up, signal ";
+        t += p >= 0 ? csq.substring(p + 6, csq.indexOf(',', p)) : String("?");
+        t += "/31. Waiting for GPS - keep me under open sky.";
+        Serial.println(sendSms(contacts[0], t) ? "boot text SENT" : "boot text FAILED");
+    }
+    Serial.println("READY. Hold the IO0 button for 2 s to send the SOS text.");
+}
+
+bool fixTexted = false, noFixTexted = false;
+
+static void fieldTestTexts() {
+    if (!FIELD_TEST_TEXTS || !modemOk || fixTexted) return;
+    if (gps.location.isValid() && gps.location.age() < 2000) {
+        fixTexted = true;
+        String t = "WatchPack test: GPS fix after ";
+        t += String(millis() / 1000) + " s, " + String(gps.satellites.value()) + " sats, hdop ";
+        t += String(gps.hdop.hdop(), 1) + ". https://maps.google.com/?q=";
+        t += String(gps.location.lat(), 5) + "," + String(gps.location.lng(), 5);
+        Serial.println(sendSms(contacts[0], t) ? "fix text SENT" : "fix text FAILED");
+    } else if (!noFixTexted && millis() >= FIELD_NO_FIX_MS) {
+        noFixTexted = true;
+        String t = "WatchPack test: no GPS fix after 10 min. In view: GPS ";
+        t += String(gpsInView.value()) + ", BeiDou " + bdInView.value();
+        t += ". Strong (>=25 dB): " + String(lastUsable) + ", best " + String(lastBest) + " dB.";
+        Serial.println(sendSms(contacts[0], t) ? "no-fix text SENT" : "no-fix text FAILED");
+    }
 }
 
 void loop() {
-    while (SerialGPS.available()) gps.encode(SerialGPS.read());
+    while (SerialGPS.available()) {
+        if (gps.encode(SerialGPS.read())) { tally(gSnr); tally(bSnr); }
+    }
+    static uint32_t lastSecond = 0;
+    if (millis() - lastSecond >= 1000) {
+        lastSecond = millis();
+        lastUsable = usable; lastBest = bestSnr;
+        usable = 0; bestSnr = 0;
+    }
+    fieldTestTexts();
 
     const bool pressed = digitalRead(BOOT_BUTTON_PIN) == LOW;
     if (pressed && pressedSince == 0) pressedSince = millis();

@@ -15,7 +15,7 @@ import { fetchQuakes } from "./phivolcs.mjs";
 
 const keyPath = new URL("../serviceAccount.json", import.meta.url);
 initializeApp({ credential: existsSync(keyPath) ? cert(JSON.parse(readFileSync(keyPath))) : applicationDefault() });
-const db = getFirestore();
+export const db = getFirestore();
 const fcm = getMessaging();
 
 // ---------- alert policy ----------

@@ -22,7 +22,9 @@ dependencies:
   intl: ^0.20.3
   latlong2: ^0.10.1
   material_symbols_icons: ^4.2960.0
+  share_plus: ^13.3.1
   shared_preferences: ^2.5.6
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:
