@@ -1,15 +1,20 @@
 // Step 5 — cloud. The demo firmware: everything the app needs from the device.
 //   every 30 s (10 s in SOS) → position, battery, signal to Firestore over LTE/HTTPS
-//   every 10 s               → reads its command mailbox; "Find device" → buzzer 15 s
+//   every 10 s               → reads its command mailbox: "Find device" → buzzer 15 s,
+//                              and the family contacts edited in the app
 //   SOS button held 2 s      → SMS to every contact first, then the app goes red (10 min)
 //   short press while buzzing → stops the buzzer
 // Talks to Firestore's REST API directly, no Cloud Functions. Each write carries
 // DEVICE_SECRET, which the security rules check — app/firestore.rules, provision.mjs.
 // IO0 works as a second SOS button. The SOS input is ignored until it has read idle once,
 // so the sketch is safe to run before the button is wired.
+// SOS numbers: the app's family contacts once it has sent them (kept in flash, so SOS
+// still works offline after a reboot), else SOS_CONTACTS from secrets.h.
 
 #include <Arduino.h>
+#include <Preferences.h>
 #include <TinyGPS++.h>
+#include <vector>
 #include "board.h"
 #include "secrets.h"
 
@@ -24,8 +29,29 @@ const char* const BASE = "https://firestore.googleapis.com/v1/" DOCS;
 const char* const FW = "05_cloud";
 
 TinyGPSPlus gps;
-const char* const contacts[] = SOS_CONTACTS;
-constexpr size_t contactCount = sizeof(contacts) / sizeof(contacts[0]);
+const char* const builtinContacts[] = SOS_CONTACTS;
+Preferences prefs;
+String appContacts;                     // "+639…,+639…" as last received from the app
+
+static bool validPhone(const String& p) {
+    if (p.length() != 13 || !p.startsWith("+639")) return false;
+    for (int i = 1; i < 13; i++) if (!isDigit(p[i])) return false;
+    return true;
+}
+
+static std::vector<String> sosNumbers() {
+    std::vector<String> out;
+    for (int start = 0; start < (int)appContacts.length();) {
+        int comma = appContacts.indexOf(',', start);
+        if (comma < 0) comma = appContacts.length();
+        String p = appContacts.substring(start, comma);
+        p.trim();
+        if (validPhone(p)) out.push_back(p);
+        start = comma + 1;
+    }
+    if (out.empty()) for (const char* c : builtinContacts) out.push_back(c);
+    return out;
+}
 
 // ---------- background work: GPS, button, buzzer (runs inside every wait) ----------
 bool sosWired = false, btnDown = false, sosFiredThisPress = false, sosRequested = false;
@@ -250,12 +276,35 @@ static bool postTelemetry() {
     return true;
 }
 
-// Reads cmdbox/<secret>. On buzz: start the buzzer and clear the mailbox.
+// One field of a Firestore REST document: `"name": { "booleanValue": true }` → the
+// text from the name up to its closing brace, or "" if it isn't there.
+static String field(const String& body, const char* name) {
+    const int k = body.indexOf(String("\"") + name + "\"");
+    if (k < 0) return "";
+    const int end = body.indexOf('}', k);
+    return end < 0 ? "" : body.substring(k, end);
+}
+
+// Reads cmdbox/<secret>. New contacts from the app → flash. On buzz: start the buzzer
+// and clear the mailbox.
 static bool pollCommands() {
     String body;
-    const int st = http(0, String(BASE) + "/cmdbox/" DEVICE_SECRET "?mask.fieldPaths=buzz", "", &body);
+    const int st = http(0, String(BASE) + "/cmdbox/" DEVICE_SECRET "?mask.fieldPaths=buzz&mask.fieldPaths=contacts", "", &body);
     if (st != 200) { Serial.printf("[%4lu s] poll %d\n", millis() / 1000, st); return false; }
-    if (body.indexOf("true") < 0) return true;
+
+    const String c = field(body, "contacts");
+    const int sv = c.indexOf("stringValue");
+    if (sv >= 0) {
+        const int q1 = c.indexOf('"', c.indexOf(':', sv) + 1), q2 = c.indexOf('"', q1 + 1);
+        const String list = q1 >= 0 && q2 > q1 ? c.substring(q1 + 1, q2) : "";
+        if (list != appContacts) {
+            appContacts = list;
+            prefs.putString("contacts", appContacts);
+            Serial.printf("[%4lu s] contacts from the app: %u SOS numbers\n", millis() / 1000, (unsigned)sosNumbers().size());
+        }
+    }
+
+    if (field(body, "buzz").indexOf("true") < 0) return true;
     Serial.printf("[%4lu s] FIND DEVICE → buzzing %lu s\n", millis() / 1000, BUZZ_MS / 1000);
     buzzUntil = millis() + BUZZ_MS;
     buzzWasOn = true;
@@ -282,9 +331,9 @@ static void fireSos() {
     } else {
         t += "No GPS fix yet.";
     }
-    for (size_t i = 0; i < contactCount; i++) {         // SMS first: it works without internet
-        const bool ok = sendSms(contacts[i], t);
-        Serial.printf("  sms %s %s\n", contacts[i], ok ? "SENT" : "FAILED");
+    for (const String& n : sosNumbers()) {              // SMS first: it works without internet
+        const bool ok = sendSms(n.c_str(), t);
+        Serial.printf("  sms %s %s\n", n.c_str(), ok ? "SENT" : "FAILED");
     }
     postTelemetry();
 }
@@ -305,6 +354,9 @@ void setup() {
     Serial.begin(SERIAL_BAUD);
     delay(300);
     Serial.printf("\nWatchPack — %s | device %s | battery %.2f V\n", FW, DEVICE_ID, readBatteryVolts());
+    prefs.begin("watchpack", false);
+    appContacts = prefs.getString("contacts", "");
+    Serial.printf("sos numbers: %u (%s)\n", (unsigned)sosNumbers().size(), appContacts.length() ? "from the app" : "secrets.h");
     SerialGPS.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
     SerialAT.begin(MODEM_BAUD, SERIAL_8N1, MODEM_RX_PIN, MODEM_TX_PIN);
 
