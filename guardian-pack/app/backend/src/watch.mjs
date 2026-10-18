@@ -1,13 +1,21 @@
 // Live watcher for real devices (the ones provision.mjs registered — they have a cmdId).
 // Turns what the device writes into alerts + push notifications:
-//   SOS · zone enter/exit · low battery · signal loss / back online
-// and runs the PHIVOLCS quake job every 5 minutes. Keep it running during the demo:
+//   SOS · zone enter/exit · off-route / back on route · low battery · signal loss / back online
+// and runs the PHIVOLCS quake job every 5 minutes and the severe-weather check every 15.
+// Keep it running during the demo:
 //   npm run watch
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { db, pushToParents, quakesJob } from "./run.mjs";
+import { RouteMemory } from "./routes.mjs";
+import { severeWeather, weatherText } from "./weather.mjs";
 
 const EXIT_MARGIN_M = 25;            // hysteresis so GPS jitter at the edge doesn't flap
 const BATTERY_RESET_MARGIN = 5;
+const OFF_ROUTE_M = 440;             // this far from every usual place, two fixes in a row
+const WEATHER_REPEAT_MS = 3 * 3600e3;
+
+const routes = new RouteMemory();
+const offStreak = new Map();         // deviceId → { seen, count } — fixes in a row off the usual places
 
 const distM = (a, b) => {
   const R = 6371e3, toR = (d) => (d * Math.PI) / 180;
@@ -30,8 +38,11 @@ async function triggersOf(ref) {
   return {
     lowBatteryOn: t.lowBatteryOn !== false, lowBatteryPct: t.lowBatteryPct ?? 20,
     signalLossOn: t.signalLossOn !== false, signalLossMin: t.signalLossMin ?? 10,
+    offRouteOn: t.offRouteOn !== false, weatherOn: t.weatherOn !== false,
   };
 }
+
+const fmtM = (m) => (m === Infinity ? "more than 2 km" : m < 1000 ? `about ${Math.round(m / 10) * 10} m` : `about ${(m / 1000).toFixed(1)} km`);
 
 async function evaluate(ref) {
   const snap = await ref.get();                    // fresh: an earlier pass may have patched watch.*
@@ -70,8 +81,30 @@ async function evaluate(ref) {
     }
   }
 
-  // Low battery — once per dip below the threshold.
   const t = await triggersOf(ref);
+
+  // Off-route — outside every zone and far from everywhere the child usually goes,
+  // for two fixes in a row. Counted once per device update (lastSeen), not per snapshot.
+  const seen = d.lastSeen instanceof Timestamp ? d.lastSeen.toMillis() : null;
+  const streak = offStreak.get(ref.id) ?? { seen: null, count: 0 };
+  if (t.offRouteOn && d.gpsFix && d.lastLat != null && seen && streak.seen !== seen) {
+    streak.seen = seen;
+    const inZone = (patch.insideZoneId !== undefined ? patch.insideZoneId : d.insideZoneId) != null;
+    const r = await routes.check(ref, d.lastLat, d.lastLng);
+    const off = !inZone && !r.learning && r.metres >= OFF_ROUTE_M;
+    streak.count = off ? streak.count + 1 : 0;
+    if (off && streak.count >= 2 && !watch.offRoute) {
+      patch["watch.offRoute"] = true;
+      await raise(ref, d, "off_route", `${name} is off the usual route`,
+        `${name} is ${fmtM(r.metres)} from anywhere ${name} usually goes (${clock()}). Open WatchPack to see where.`);
+    } else if (!off && watch.offRoute && (inZone || (!r.learning && r.metres < OFF_ROUTE_M / 2))) {
+      patch["watch.offRoute"] = false;
+      await raise(ref, d, "on_route", `${name} is back on a usual route`, `Back somewhere familiar at ${clock()}.`);
+    }
+    offStreak.set(ref.id, streak);
+  }
+
+  // Low battery — once per dip below the threshold.
   if (d.lastSeen && t.lowBatteryOn && typeof d.battery === "number") {
     if (d.battery <= t.lowBatteryPct && !watch.lowBattery) {
       patch["watch.lowBattery"] = true;
@@ -82,7 +115,6 @@ async function evaluate(ref) {
   }
 
   // Back online after a signal-loss alert.
-  const seen = d.lastSeen instanceof Timestamp ? d.lastSeen.toMillis() : null;
   if (watch.offline && seen && Date.now() - seen < 2 * 60e3) {
     patch["watch.offline"] = false;
     await raise(ref, d, "other", `${name}'s WatchPack is back online`, `Reconnected at ${clock()}.`);
@@ -106,6 +138,23 @@ async function signalLossSweep() {
   }
 }
 
+// Severe weather where a device is (and has been heard from in the last hour).
+// Each kind (thunder / rain / wind) alerts at most once every 3 hours per device.
+async function weatherSweep() {
+  const devices = await db.collection("devices").get();
+  for (const snap of devices.docs) {
+    const d = snap.data();
+    if (!d.cmdId || d.lastLat == null || !(d.lastSeen instanceof Timestamp)) continue;
+    if (Date.now() - d.lastSeen.toMillis() > 60 * 60e3) continue;
+    if (!(await triggersOf(snap.ref)).weatherOn) continue;
+    const w = await severeWeather(d.lastLat, d.lastLng);
+    if (!w || Date.now() - (d.watch?.weather?.[w.kind] ?? 0) < WEATHER_REPEAT_MS) continue;
+    await snap.ref.update({ [`watch.weather.${w.kind}`]: Date.now() });
+    const { title, body } = weatherText(w, d.name ?? "your child");
+    await raise(snap.ref, d, "weather", title, body);
+  }
+}
+
 // Serialise per device so overlapping snapshots don't raise the same alert twice.
 const queue = new Map();
 const enqueue = (ref) => {
@@ -125,3 +174,6 @@ setInterval(() => signalLossSweep().catch((e) => console.error("sweep:", e.messa
 const quakes = () => quakesJob().catch((e) => console.error("quakes job failed:", e.message));
 quakes();
 setInterval(quakes, 5 * 60e3);
+const weather = () => weatherSweep().catch((e) => console.error("weather:", e.message));
+weather();
+setInterval(weather, 15 * 60e3);
