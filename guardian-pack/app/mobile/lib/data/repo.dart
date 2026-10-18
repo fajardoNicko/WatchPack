@@ -10,6 +10,7 @@ class SelectedDevice extends Notifier<String?> {
   @override
   String? build() => null;
   void select(String id) => state = id;
+  void clear() => state = null;
 }
 
 final selectedDeviceProvider = NotifierProvider<SelectedDevice, String?>(SelectedDevice.new);

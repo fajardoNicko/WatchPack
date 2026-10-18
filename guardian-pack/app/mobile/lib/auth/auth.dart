@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Firebase Auth (email + password) and the parent's profile document.
 ///
-/// users/{uid}: { email, displayName, deviceIds: [..], createdAt }
+/// users/{uid}: { email, displayName, deviceIds: [..], linkCode?, photo?, fcmTokens, createdAt }
+/// deviceIds only grows together with a link code — see data/linking.dart.
 
 final authStateProvider = StreamProvider<User?>((_) => FirebaseAuth.instance.authStateChanges());
 
@@ -74,13 +75,24 @@ class AuthActions {
 
   Future<void> signOut() => _auth.signOut();
 
-  Future<void> linkDevice(String uid, String deviceId) => _db.collection('users').doc(uid).set({
-        'deviceIds': FieldValue.arrayUnion([deviceId.trim()]),
-      }, SetOptions(merge: true));
+  /// Firebase wants a fresh sign-in before a password change or account deletion.
+  Future<void> reauth(String password) async {
+    final u = _auth.currentUser!;
+    await u.reauthenticateWithCredential(EmailAuthProvider.credential(email: u.email!, password: password));
+  }
 
-  Future<void> unlinkDevice(String uid, String deviceId) => _db.collection('users').doc(uid).update({
-        'deviceIds': FieldValue.arrayRemove([deviceId]),
-      });
+  Future<void> changePassword(String current, String next) async {
+    await reauth(current);
+    await _auth.currentUser!.updatePassword(next);
+  }
+
+  /// Deletes the profile and the sign-in itself. Run [reauth] and
+  /// LinkActions.forgetMe first.
+  Future<void> deleteAccount() async {
+    final u = _auth.currentUser!;
+    await _db.collection('users').doc(u.uid).delete();
+    await u.delete();
+  }
 
   /// Parent's own avatar (data URI) or null to remove it.
   Future<void> setPhoto(String uid, String? dataUri) => _db.collection('users').doc(uid).set({
