@@ -31,12 +31,16 @@ class Device {
     this.photo,
     this.cmdId,
     this.gpsFix = true,
+    this.sosAt,
+    this.csq,
   });
 
   final String id, name;
   final String? photo;                    // child's photo, base64 data URI
   final String? cmdId;                    // real devices: their command mailbox, cmdbox/{cmdId}
   final bool gpsFix;                      // false = position is the last known one
+  final DateTime? sosAt;                  // when the SOS button was last held
+  final int? csq;                         // modem signal quality 0–31 (99 = unknown); real devices only
   final int battery;
   final DateTime? lastSeen;
   final LatLng? position;
@@ -73,6 +77,8 @@ class Device {
       photo: m['photo'] as String?,
       cmdId: m['cmdId'] as String?,
       gpsFix: m['gpsFix'] != false,
+      sosAt: (m['sosAt'] as Timestamp?)?.toDate(),
+      csq: (m['csq'] as num?)?.toInt(),
       contacts: [
         for (final c in (m['contacts'] as List?) ?? const [])
           if (c is Map) Contact(name: '${c['name'] ?? ''}', phone: '${c['phone'] ?? ''}', photo: c['photo'] as String?),
@@ -161,25 +167,28 @@ class Alert {
   }
 }
 
+/// devices/{id}/settings/triggers. Defaults match backend/src/watch.mjs.
 class Triggers {
   const Triggers({
-    this.lowBatteryPct = 10,
+    this.lowBatteryPct = 20,
     this.lowBatteryOn = true,
-    this.signalLossMin = 15,
+    this.signalLossMin = 10,
     this.signalLossOn = true,
     this.offRouteOn = true,
+    this.weatherOn = true,
   });
   final int lowBatteryPct, signalLossMin;
-  final bool lowBatteryOn, signalLossOn, offRouteOn;
+  final bool lowBatteryOn, signalLossOn, offRouteOn, weatherOn;
 
   factory Triggers.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
     final m = d.data() ?? const {};
     return Triggers(
-      lowBatteryPct: (m['lowBatteryPct'] as num?)?.toInt() ?? 10,
+      lowBatteryPct: (m['lowBatteryPct'] as num?)?.toInt() ?? 20,
       lowBatteryOn: m['lowBatteryOn'] != false,
-      signalLossMin: (m['signalLossMin'] as num?)?.toInt() ?? 15,
+      signalLossMin: (m['signalLossMin'] as num?)?.toInt() ?? 10,
       signalLossOn: m['signalLossOn'] != false,
       offRouteOn: m['offRouteOn'] != false,
+      weatherOn: m['weatherOn'] != false,
     );
   }
 }
