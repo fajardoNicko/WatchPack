@@ -309,7 +309,9 @@ class _FeedTab extends ConsumerWidget {
     // Open on screen = read. The badge clears once the feed has actually been shown.
     final id = ref.watch(deviceIdProvider);
     if (id != null && ref.watch(tabProvider) == 2 && ref.watch(unreadAlertsProvider) > 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => ref.read(alertsSeenProvider.notifier).markSeen(id));
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) ref.read(alertsSeenProvider.notifier).markSeen(id);
+      });
     }
     return alerts.when(
       loading: () => const Padding(padding: EdgeInsets.all(WpSpace.l), child: Column(children: [Skeleton(height: 72), SizedBox(height: WpSpace.m), Skeleton(height: 72)])),

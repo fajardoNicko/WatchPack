@@ -57,7 +57,10 @@ final pushSetupProvider = FutureProvider<bool>((ref) async {
   final fm = FirebaseMessaging.instance;
   FirebaseMessaging.onBackgroundMessage(_onBackgroundMessage);
 
-  void open(Map<String, dynamic> data) => ref.read(pushOpenProvider.notifier).open(data);
+  // The plugin keeps this callback after sign-out; only act while this session lives.
+  void open(Map<String, dynamic> data) {
+    if (ref.mounted) ref.read(pushOpenProvider.notifier).open(data);
+  }
 
   await _local.initialize(
     settings: const InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher')),

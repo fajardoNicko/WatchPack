@@ -42,8 +42,10 @@ export function weatherText(w, name) {
   switch (w.kind) {
     case "thunder":
       return { title: `Thunderstorm near ${name}`, body: `A thunderstorm is over or close to ${name}'s area this hour. Make sure ${name} is indoors.` };
-    case "rain":
-      return { title: `Heavy rain where ${name} is`, body: `About ${Math.round(w.rain)} mm/h this hour around ${name}'s area — watch for flooding on the way home.` };
+    case "rain": {
+      const amount = w.rain >= HEAVY_RAIN_MM_H ? `About ${Math.round(w.rain)} mm/h` : "Heavy showers";
+      return { title: `Heavy rain where ${name} is`, body: `${amount} this hour around ${name}'s area — watch for flooding on the way home.` };
+    }
     default:
       return { title: `Strong wind near ${name}`, body: `Gusts up to ${Math.round(w.gust)} km/h this hour around ${name}'s area.` };
   }

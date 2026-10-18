@@ -40,7 +40,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final device = ref.watch(deviceProvider);
-    final fixes = ref.watch(fixesForDayProvider(DateTime.now()));
+    final fixes = ref.watch(fixesForDayProvider(dateOnly(DateTime.now())));
     final zones = ref.watch(zonesProvider);
     final quakes = ref.watch(quakesProvider);
     final pos = device.value?.position;

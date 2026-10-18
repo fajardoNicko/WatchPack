@@ -1,16 +1,34 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../auth/auth.dart';
 import 'models.dart';
 
-/// The device the parent picked in Settings, if they have more than one.
+/// The device the parent picked in Settings, if they have more than one. Remembered
+/// on the phone so the app reopens on it.
 class SelectedDevice extends Notifier<String?> {
+  static const _key = 'selectedDevice';
+
   @override
-  String? build() => null;
-  void select(String id) => state = id;
-  void clear() => state = null;
+  String? build() {
+    SharedPreferences.getInstance().then((p) {
+      final saved = p.getString(_key);
+      if (saved != null && state == null) state = saved;
+    });
+    return null;
+  }
+
+  void select(String id) {
+    state = id;
+    SharedPreferences.getInstance().then((p) => p.setString(_key, id));
+  }
+
+  void clear() {
+    state = null;
+    SharedPreferences.getInstance().then((p) => p.remove(_key));
+  }
 }
 
 final selectedDeviceProvider = NotifierProvider<SelectedDevice, String?>(SelectedDevice.new);
@@ -42,7 +60,9 @@ final deviceProvider = StreamProvider<Device>((ref) {
 });
 
 /// Fixes for one calendar day, oldest first. Used by the map trail and trip history.
-final fixesForDayProvider = StreamProvider.family<List<Fix>, DateTime>((ref, day) {
+/// Key it with a midnight (`dateOnly`), never a raw DateTime.now() — every distinct
+/// key is its own Firestore listener.
+final fixesForDayProvider = StreamProvider.autoDispose.family<List<Fix>, DateTime>((ref, day) {
   final id = _requireDevice(ref);
   final start = DateTime(day.year, day.month, day.day);
   final end = start.add(const Duration(days: 1));

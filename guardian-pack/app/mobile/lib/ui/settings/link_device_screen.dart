@@ -114,7 +114,12 @@ class _CodeDialogState extends State<_CodeDialog> {
             autocorrect: false,
             enableSuggestions: false,
             textCapitalization: TextCapitalization.characters,
-            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9\- ]')), LengthLimitingTextInputFormatter(11)],
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9\- ]')),
+              LengthLimitingTextInputFormatter(11),
+              // Codes are upper case; "wp-demo-ivy" stays as typed.
+              TextInputFormatter.withFunction((_, v) => v.text.startsWith(RegExp('wp', caseSensitive: false)) ? v : v.copyWith(text: v.text.toUpperCase())),
+            ],
             style: const TextStyle(fontFamily: 'Inter', fontSize: 22, fontWeight: FontWeight.w600, letterSpacing: 2),
             decoration: InputDecoration(labelText: 'Pairing or invite code', hintText: 'XXXX-XXXX', errorText: _error),
             onChanged: (_) { if (_error != null) setState(() => _error = null); },

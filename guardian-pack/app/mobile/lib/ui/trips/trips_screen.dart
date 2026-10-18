@@ -20,19 +20,19 @@ class TripsScreen extends ConsumerStatefulWidget {
 }
 
 class _TripsScreenState extends ConsumerState<TripsScreen> {
-  DateTime _day = DateTime.now();
+  DateTime _day = dateOnly(DateTime.now());
   double _scrub = 1.0;          // 0..1 along the day's fixes
   final _map = MapController();
   List<LatLng> _fitted = const [];
 
   void _shift(int days) => setState(() {
-        _day = _day.add(Duration(days: days));
+        _day = DateTime(_day.year, _day.month, _day.day + days);
         _scrub = 1.0;
       });
 
   Future<void> _pick() async {
     final d = await showDatePicker(context: context, initialDate: _day, firstDate: DateTime(2026), lastDate: DateTime.now());
-    if (d != null) setState(() { _day = d; _scrub = 1.0; });
+    if (d != null) setState(() { _day = dateOnly(d); _scrub = 1.0; });
   }
 
   void _fit(List<LatLng> pts) {
