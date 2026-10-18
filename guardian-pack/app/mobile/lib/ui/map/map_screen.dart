@@ -222,14 +222,21 @@ class _StatusCard extends ConsumerWidget {
                         _Action(icon: Symbols.history_rounded, label: 'History', onTap: onHistory),
                         _Action(
                           icon: Symbols.notifications_active_rounded,
-                          label: d.buzz ? 'Buzzing…' : 'Find device',
+                          // Offline devices can't pick the buzz up: it waits, and can be withdrawn.
+                          label: !d.buzz ? 'Find device' : (d.status == DeviceStatus.offline ? 'Queued · cancel' : 'Buzzing…'),
                           primary: true,
-                          onTap: d.buzz
-                              ? null
-                              : () async {
+                          onTap: !d.buzz
+                              ? () async {
                                   await ref.read(deviceActionsProvider).requestBuzz(d.cmdId);
-                                  if (context.mounted) showNote(context, 'Buzz sent. ${d.name}\'s WatchPack beeps within 10 seconds.');
-                                },
+                                  if (context.mounted) {
+                                    showNote(context, d.status == DeviceStatus.offline
+                                        ? '${d.name}\'s WatchPack is offline. It will beep as soon as it reconnects.'
+                                        : 'Buzz sent. ${d.name}\'s WatchPack beeps within 10 seconds.');
+                                  }
+                                }
+                              : d.status == DeviceStatus.offline
+                                  ? () => ref.read(deviceActionsProvider).cancelBuzz(d.cmdId)
+                                  : null,
                         ),
                         _Action(icon: Symbols.share_rounded, label: 'Share', onTap: d.position == null ? null : () => _share(d)),
                       ],
