@@ -62,7 +62,7 @@ class SettingsScreen extends ConsumerWidget {
                   icon: Symbols.phone_android_rounded,
                   title: 'Device linking',
                   body: device == null ? 'Link a physical WatchPack device' : 'Showing ${device.name} (${device.id})',
-                  action: (profile?.deviceIds.length ?? 0) > 1 ? 'Switch or link' : 'Link another',
+                  action: (profile?.deviceIds.length ?? 0) > 1 ? 'Switch' : 'Link another',
                   onTap: () => showDevicePicker(context, ref),
                 ),
               ),
@@ -130,7 +130,7 @@ class SettingsScreen extends ConsumerWidget {
     if (r == null) return;
     final list = [...d.contacts];
     list[i] = r.isEmpty ? c.copyWith(clearPhoto: true) : c.copyWith(photo: r);
-    await ref.read(deviceActionsProvider).updateContacts(list);
+    await ref.read(deviceActionsProvider).updateContacts(list, cmdId: d.cmdId);
   }
 
   // ---- contacts ----
@@ -174,7 +174,10 @@ class SettingsScreen extends ConsumerWidget {
         list[index] = c;
       }
     }
-    await ref.read(deviceActionsProvider).updateContacts(list);
+    await ref.read(deviceActionsProvider).updateContacts(list, cmdId: d.cmdId);
+    if (d.cmdId != null && context.mounted) {
+      showNote(context, '${d.name}\'s WatchPack picks up the new numbers within a minute.');
+    }
   }
 
   /// 09XXXXXXXXX or +639XXXXXXXXX → +639XXXXXXXXX; anything else → null.

@@ -82,9 +82,14 @@ class DeviceActions {
 
   /// Real devices read their mailbox (cmdbox/{cmdId}); the device doc flag drives
   /// the "Buzzing…" label until the device clears it.
-  Future<void> requestBuzz(String? cmdId) {
-    final batch = _db.batch()..update(_deviceRef(_id), {'buzz': true});
-    if (cmdId != null) batch.update(_db.collection('cmdbox').doc(cmdId), {'buzz': true});
+  Future<void> requestBuzz(String? cmdId) => _setBuzz(cmdId, true);
+
+  /// Withdraws a buzz the device hasn't picked up (e.g. it was off).
+  Future<void> cancelBuzz(String? cmdId) => _setBuzz(cmdId, false);
+
+  Future<void> _setBuzz(String? cmdId, bool on) {
+    final batch = _db.batch()..update(_deviceRef(_id), {'buzz': on});
+    if (cmdId != null) batch.update(_db.collection('cmdbox').doc(cmdId), {'buzz': on});
     return batch.commit();
   }
 
@@ -117,9 +122,15 @@ class DeviceActions {
   Future<void> updateTriggers(Map<String, Object> patch) =>
       _deviceRef(_id).collection('settings').doc('triggers').set(patch, SetOptions(merge: true));
 
-  /// Replaces the whole family-contacts list (it's one array on the device doc).
-  Future<void> updateContacts(List<Contact> contacts) =>
-      _deviceRef(_id).update({'contacts': [for (final c in contacts) c.toMap()]});
+  /// Replaces the whole family-contacts list (it's one array on the device doc). Real
+  /// devices also get the numbers in their mailbox — that's who the SOS text goes to.
+  Future<void> updateContacts(List<Contact> contacts, {String? cmdId}) {
+    final batch = _db.batch()..update(_deviceRef(_id), {'contacts': [for (final c in contacts) c.toMap()]});
+    if (cmdId != null) {
+      batch.update(_db.collection('cmdbox').doc(cmdId), {'contacts': contacts.map((c) => c.phone).join(',')});
+    }
+    return batch.commit();
+  }
 
   /// Child's photo (data URI) or null to remove it.
   Future<void> setChildPhoto(String? dataUri) =>
