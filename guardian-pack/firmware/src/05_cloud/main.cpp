@@ -358,12 +358,14 @@ void setup() {
     appContacts = prefs.getString("contacts", "");
     Serial.printf("sos numbers: %u (%s)\n", (unsigned)sosNumbers().size(), appContacts.length() ? "from the app" : "secrets.h");
     SerialGPS.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
+    gpsUseAllSystems(SerialGPS);
     SerialAT.begin(MODEM_BAUD, SERIAL_8N1, MODEM_RX_PIN, MODEM_TX_PIN);
 
     Serial.print("modem ");
     if (!modemAnswers(2)) { modemPowerOn(); modemOk = modemAnswers(60); }
     else modemOk = true;
     Serial.println(modemOk ? "ready" : "NOT ANSWERING");
+    gpsUseAllSystems(SerialGPS);                        // again: right after power-up the L76K may still be booting
     if (!modemOk) return;
     at("ATE0");
     auto line = [](String s) { s.replace("\r", ""); s.replace("\n", " "); s.replace("OK", ""); s.trim(); return s; };
