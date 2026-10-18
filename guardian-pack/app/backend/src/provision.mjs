@@ -1,8 +1,10 @@
-// Registers a real device: devices/<id> + its secret command mailbox cmdbox/<secret>,
+// Registers a real device: devices/<id> + its secret command mailbox cmdbox/<secret>
+// + its pairing code linkcodes/<code> (goes on the sticker; parents link with it),
 // and links it (first) to a parent account so the app opens on it.
 //   node src/provision.mjs [deviceId] [name] [parentEmail]
-// Re-running keeps the existing secret. Prints the lines for firmware/include/secrets.h.
-import { randomBytes } from "node:crypto";
+// Re-running keeps the existing secret and code. Prints the lines for
+// firmware/include/secrets.h and the pairing code.
+import { randomBytes, randomInt } from "node:crypto";
 import { readFileSync, existsSync } from "node:fs";
 import { initializeApp, cert, applicationDefault } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
@@ -24,6 +26,16 @@ await ref.set(
   { merge: true },
 );
 await db.doc(`cmdbox/${secret}`).set({ deviceId, buzz: false }, { merge: true });
+
+// Same alphabet as the app (mobile/lib/data/linking.dart): no 0/O or 1/I.
+const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+let pairCode = snap.get("pairCode");
+if (!pairCode) {
+  do pairCode = Array.from({ length: 8 }, () => ALPHABET[randomInt(ALPHABET.length)]).join("");
+  while ((await db.doc(`linkcodes/${pairCode}`).get()).exists);
+  await ref.update({ pairCode });
+}
+await db.doc(`linkcodes/${pairCode}`).set({ deviceId, kind: "device" });
 const triggers = db.doc(`devices/${deviceId}/settings/triggers`);
 if (!(await triggers.get()).exists) {
   await triggers.set({ lowBatteryPct: 20, lowBatteryOn: true, signalLossMin: 10, signalLossOn: true, offRouteOn: false });
@@ -35,9 +47,10 @@ for (const u of users.docs) {
   await u.ref.update({ deviceIds: [deviceId, ...ids] });
   console.log(`linked ${deviceId} first on users/${u.id} (${email})`);
 }
-if (users.empty) console.log(`no profile with email ${email} — link it in the app: Settings → Link device → ${deviceId}`);
+if (users.empty) console.log(`no profile with email ${email} — link it in the app with the pairing code below`);
 
 console.log(`\ndevice ${deviceId} ready. firmware/include/secrets.h:\n`);
 console.log(`#define DEVICE_ID     "${deviceId}"`);
 console.log(`#define DEVICE_SECRET "${secret}"`);
+console.log(`\npairing code (sticker): ${pairCode.slice(0, 4)}-${pairCode.slice(4)}`);
 process.exit(0);
