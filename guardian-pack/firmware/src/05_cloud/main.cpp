@@ -314,8 +314,19 @@ void setup() {
     Serial.println(modemOk ? "ready" : "NOT ANSWERING");
     if (!modemOk) return;
     at("ATE0");
-    for (int i = 0; i < 45 && !registered(); i++) wait(2000);
+    auto line = [](String s) { s.replace("\r", ""); s.replace("\n", " "); s.replace("OK", ""); s.trim(); return s; };
+    Serial.printf("sim: %s\n", line(at("AT+CPIN?")).c_str());
+    for (int i = 0; i < 45 && !registered(); i++) {
+        if (i % 5 == 0) Serial.printf("  [%3lu s] %s | %s\n", millis() / 1000, line(at("AT+CEREG?")).c_str(), line(at("AT+CSQ")).c_str());
+        wait(2000);
+    }
     Serial.printf("network %s\n", registered() ? "registered" : "NOT registered");
+    if (!registered()) {
+        Serial.printf("  creg: %s\n", line(at("AT+CREG?")).c_str());
+        Serial.printf("  cops: %s\n", line(at("AT+COPS?", 10000)).c_str());
+        Serial.printf("  cpsi: %s\n", line(at("AT+CPSI?")).c_str());
+        Serial.printf("  cfun: %s\n", line(at("AT+CFUN?")).c_str());
+    }
     Serial.printf("data %s\n", dataUp() ? "up" : "DOWN");
     sslSetup();
     toneUntil = millis() + 150;                         // one short chirp = online
