@@ -176,7 +176,14 @@ static bool sendSms(const char* number, const String& text) {
 // a 7xx modem error, or < 0 if the AT exchange broke. `out` gets the body (GET only).
 static int http(int method, const String& url, const String& body, String* out = nullptr) {
     at("AT+HTTPTERM", 2000);
-    if (at("AT+HTTPINIT", 5000).indexOf("OK") < 0) return -1;
+    // Straight after the previous request the HTTP stack can still be closing and
+    // refuses HTTPINIT; seen as every poll failing right after a post in SOS mode.
+    bool ready = false;
+    for (int i = 0; i < 3 && !ready; i++) {
+        if (i) wait(500);
+        ready = at("AT+HTTPINIT", 5000).indexOf("OK") >= 0;
+    }
+    if (!ready) return -1;
     at("AT+HTTPPARA=\"URL\",\"" + url + "\"");
     at("AT+HTTPPARA=\"SSLCFG\",0");
     if (method == 1) {
@@ -386,8 +393,22 @@ void setup() {
     toneUntil = millis() + 150;                         // one short chirp = online
 }
 
+// Bench testing over USB: type "sos" in the serial monitor to fire an SOS without the
+// button. Needs the cable plugged in, so it can't be triggered from outside.
+static void serialCommands() {
+    static String cmd;
+    while (Serial.available()) {
+        const char c = Serial.read();
+        if (c != '\n' && c != '\r') { if (cmd.length() < 16) cmd += c; continue; }
+        cmd.trim();
+        if (cmd == "sos") { Serial.println("serial: SOS requested"); sosRequested = true; }
+        cmd = "";
+    }
+}
+
 void loop() {
     service();
+    serialCommands();
     if (gps.location.isValid() && gps.location.isUpdated()) lastGoodFixAt = millis();
 
     if (sosRequested) { sosRequested = false; if (modemOk) fireSos(); }
