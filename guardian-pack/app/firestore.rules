@@ -39,10 +39,50 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys();
     }
 
-    // A parent's own profile. Linking a device = adding its id here.
-    // TODO(step 3): require a link code via a Cloud Function so a device id alone isn't enough.
+    function linkCode(code) {
+      return get(/databases/$(db)/documents/linkcodes/$(code)).data;
+    }
+
+    // Device ids this write adds to a profile.
+    function addedDevices() {
+      let before = resource == null ? [] : resource.data.get('deviceIds', []);
+      return request.resource.data.get('deviceIds', []).toSet().difference(before.toSet());
+    }
+
+    // A profile only gains a device together with a valid code for exactly that device
+    // (linkcodes/{code}, written as profile.linkCode). The shared demo device needs none.
+    function linkAllowed() {
+      let added = addedDevices();
+      return added.size() == 0
+        || added.hasOnly(['wp-demo-ivy'])
+        || (request.resource.data.get('linkCode', null) is string
+            && added == [linkCode(request.resource.data.linkCode).deviceId].toSet()
+            && (linkCode(request.resource.data.linkCode).get('expiresAt', null) == null
+                || linkCode(request.resource.data.linkCode).expiresAt > request.time));
+    }
+
+    // A parent's own profile. Linking a device = adding its id here, with a code.
     match /users/{uid} {
-      allow read, write: if signedIn() && request.auth.uid == uid;
+      allow read, delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid && linkAllowed();
+    }
+
+    // Pairing codes (kind 'device', made by provision.mjs, no expiry) and one-time
+    // invites (kind 'invite') that a linked parent makes for another parent. The code is
+    // the doc id: knowing it is the permission, so codes can't be listed by others.
+    match /linkcodes/{code} {
+      allow get: if signedIn();
+      allow list: if signedIn() && resource.data.get('createdBy', null) == request.auth.uid;
+      allow create: if linkedTo(request.resource.data.deviceId)
+        && request.resource.data.keys().hasOnly(['deviceId', 'kind', 'createdBy', 'createdByName', 'expiresAt'])
+        && request.resource.data.kind == 'invite'
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.expiresAt < request.time + duration.value(3, 'd');
+      // The maker can cancel it; whoever used it retires it.
+      allow delete: if signedIn() && resource.data.get('kind', null) == 'invite'
+        && (resource.data.createdBy == request.auth.uid || linkedTo(resource.data.deviceId));
+      allow update: if false;
     }
 
     // Earthquakes scraped by the backend — public safety data, readable by any parent.
@@ -88,6 +128,14 @@ service cloud.firestore {
       }
       match /settings/{doc} {
         allow read, write: if linkedTo(deviceId);
+      }
+      // Who can see this device. Each parent writes only their own entry. Not on the
+      // demo device, which every account shares.
+      match /members/{uid} {
+        allow read: if linkedTo(deviceId);
+        allow create, update: if request.auth.uid == uid && linkedTo(deviceId) && deviceId != 'wp-demo-ivy'
+          && request.resource.data.keys().hasOnly(['name', 'email', 'photo', 'joinedAt']);
+        allow delete: if signedIn() && request.auth.uid == uid;
       }
     }
   }
