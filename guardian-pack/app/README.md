@@ -11,14 +11,28 @@ app/
     lib/ui/         shell + Map Pin / Trip History / Notification / Settings
   tools/
     seed_demo.mjs   writes a realistic demo day for device `wp-demo-ivy` into Firestore
-  backend/          Firebase Cloud Functions (milestone 3)
+  backend/          Node + Admin SDK watcher on the laptop (alerts, push) — no Cloud Functions
 ```
 
 ## Firebase
 Project **watchpack-f9483**, Android app `ph.watchpack.app`. Firestore in `asia-southeast1`.
-**Security rules are live** (`firestore.rules`, deployed 2026-10-08 18:51): a parent can only read
-devices listed in `users/{uid}.deviceIds`; locations and alerts are read-only for the app.
-Redeploy with `firebase deploy --only firestore:rules`.
+**Security rules are live** (`firestore.rules`, last deployed 2026-10-18): a parent can only read
+devices listed in `users/{uid}.deviceIds`, and that list only grows with a link code (below);
+locations and alerts are read-only for the app. Redeploy with `firebase deploy --only firestore:rules`.
+
+## Linking a device, second parents
+- Every real device has a permanent **pairing code** (8 characters, `XXXX-XXXX`) made by
+  `npm run provision` and printed for the sticker (re-running prints the same code). Keep it
+  out of the repo — anyone with it can see the device.
+- A linked parent can make a one-time **invite code** (Settings → Parental account → Invite a
+  parent, valid 48 h) and share it. The other parent signs up and enters it under Settings →
+  Device linking. Linking, the member entry and using up the invite are one batch write.
+- The device id alone is no longer enough to link. The demo device `wp-demo-ivy` is the only
+  exception (every new account starts on it; "Look around with the demo device").
+- Security & privacy: change password, unlink a device, delete the account.
+- Family contacts edited in the app are mirrored to the device's mailbox
+  (`cmdbox/<secret>.contacts`); the `05_cloud` firmware texts those numbers on SOS and falls
+  back to `SOS_CONTACTS` in `secrets.h` until the app has sent any.
 `google-services.json` and `firebase_options.dart` are git-ignored; regenerate with
 `flutterfire configure --project=watchpack-f9483` if missing.
 
@@ -35,9 +49,27 @@ Redeploy with `firebase deploy --only firestore:rules`.
 Node + Firebase Admin SDK, no Cloud Functions needed (so no Blaze plan yet).
 - `npm run scrape` — parse PHIVOLCS latest earthquakes (no credentials needed).
 - `npm run quakes` — one pass: store quakes (48 h), alert devices near ≥M4.0 events, push to parents.
-- `npm run watch` — the same every 5 minutes.
+- `npm run watch` — the live watcher for real devices: SOS, zone enter/exit, **off-route**,
+  low battery, signal loss / back online, quakes every 5 min and **severe weather** every 15 min.
+  Must be running for push notifications.
+  - Off-route (`src/routes.mjs`): learns ~220 m cells the device was in on 2+ different days in
+    the last 14; alerts when it's 440 m+ from all of them for two fixes in a row, outside every
+    zone. Needs 3 days of history first; today's detour never counts as "usual".
+  - Weather (`src/weather.mjs`, Open-Meteo, no key): thunderstorm, ≥7.5 mm/h rain or ≥62 km/h
+    gusts now or within the hour; once per kind per 3 h. Only a ~10 km rounded position is sent.
+    `node src/weather.mjs 14.6 121.0` prints what it sees for a spot.
+- `npm run provision -- <deviceId> <name> <parentEmail>` — registers a device, prints the
+  `secrets.h` lines and the pairing code.
 Needs `backend/serviceAccount.json` (Firebase console → Project settings → Service accounts →
 Generate new private key). Git-ignored. Run it on the laptop or as a scheduled task / GitHub Action.
+
+## Status (2026-10-18)
+Feature-complete for the demo. Added: pairing / invite codes, Parental account (parents list,
+invites), Security & privacy, editable battery and signal-loss thresholds, severe-weather and
+off-route alerts, SOS card (red, *Call family*, *Directions*), share sheet, mobile-signal bars,
+queued "Find device" that can be cancelled, family contacts synced to the device, push
+notifications that open the right device and tab, unread badge on Notification, alert details
+with a map. Still to field-test on the board: GPS fix, SMS to app-edited contacts.
 
 ## Status (2026-10-09)
 Added: demo account, breathing splash + skeleton first load, app icon (placeholder W mark until the
