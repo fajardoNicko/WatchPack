@@ -65,6 +65,7 @@ Future<void> showLinkDeviceDialog(BuildContext context, WidgetRef ref) async {
 }
 
 Future<void> _link(BuildContext context, WidgetRef ref, String code) async {
+  showNote(context, 'Linking…');
   try {
     final id = await ref.read(linkActionsProvider).linkWithCode(code);
     final name = (await FirebaseFirestore.instance.collection('devices').doc(id).get()).data()?['name'] as String?;

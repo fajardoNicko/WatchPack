@@ -26,6 +26,13 @@ service cloud.firestore {
       return signedIn() && (myProfile().deviceIds.hasAny([deviceId]));
     }
 
+    // linkedTo as if the current batch were already applied, so a parent can link,
+    // list themselves and retire the invite in one atomic write.
+    function linkedAfter(deviceId) {
+      return signedIn()
+        && getAfter(/databases/$(db)/documents/users/$(request.auth.uid)).data.get('deviceIds', []).hasAny([deviceId]);
+    }
+
     // The device itself has no Firebase account. It proves who it is with its secret:
     // every write carries auth = "<secret>:<random>", and cmdbox/<secret> names the device.
     // The random part changes on each write, so an update that doesn't send a fresh auth
@@ -81,7 +88,7 @@ service cloud.firestore {
         && request.resource.data.expiresAt < request.time + duration.value(3, 'd');
       // The maker can cancel it; whoever used it retires it.
       allow delete: if signedIn() && resource.data.get('kind', null) == 'invite'
-        && (resource.data.createdBy == request.auth.uid || linkedTo(resource.data.deviceId));
+        && (resource.data.createdBy == request.auth.uid || linkedAfter(resource.data.deviceId));
       allow update: if false;
     }
 
@@ -93,9 +100,12 @@ service cloud.firestore {
 
     // Command mailbox the device polls ("Find device"). The doc id is the device's
     // secret, so knowing the id is the permission; it can't be listed.
+    // The app also mirrors the family contacts here ("+639…,+639…") for the SOS texts.
     match /cmdbox/{secret} {
       allow get: if true;
-      allow update: if changed().hasOnly(['buzz']);
+      allow update: if changed().hasOnly(['buzz', 'contacts'])
+        && request.resource.data.get('contacts', '') is string
+        && request.resource.data.get('contacts', '').size() <= 300;
       allow list, create, delete: if false;
     }
 
@@ -133,7 +143,7 @@ service cloud.firestore {
       // demo device, which every account shares.
       match /members/{uid} {
         allow read: if linkedTo(deviceId);
-        allow create, update: if request.auth.uid == uid && linkedTo(deviceId) && deviceId != 'wp-demo-ivy'
+        allow create, update: if request.auth.uid == uid && linkedAfter(deviceId) && deviceId != 'wp-demo-ivy'
           && request.resource.data.keys().hasOnly(['name', 'email', 'photo', 'joinedAt']);
         allow delete: if signedIn() && request.auth.uid == uid;
       }

@@ -131,12 +131,13 @@ class SecurityScreen extends ConsumerWidget {
       ),
     );
     if (ok != true || !context.mounted) return;
-    final nav = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final link = ref.read(linkActionsProvider);
+    Navigator.of(context).popUntil((r) => r.isFirst);
     try {
-      await ref.read(linkActionsProvider).unlink(deviceId);
-      nav.popUntil((r) => r.isFirst);
+      await link.unlink(deviceId);
     } catch (e) {
-      if (context.mounted) showNote(context, 'Could not unlink: $e');
+      messenger.showSnackBar(SnackBar(content: Text('Could not unlink $name: $e')));
     }
   }
 

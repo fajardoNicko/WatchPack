@@ -77,11 +77,7 @@ class ParentsScreen extends ConsumerWidget {
                   'Each parent can leave from Security & privacy on their own phone.', style: t.bodySmall),
             ),
             const SizedBox(height: WpSpace.xl),
-            FilledButton.icon(
-              onPressed: deviceId == null ? null : () => _invite(context, ref, deviceId, name),
-              icon: const Icon(Symbols.person_add_rounded),
-              label: const Text('Invite a parent'),
-            ),
+            _InviteButton(onPressed: deviceId == null ? null : () => _invite(context, ref, deviceId, name)),
             if (invites.isNotEmpty) ...[
               const SectionTitle('Open invites'),
               WpCard(
@@ -116,7 +112,7 @@ class ParentsScreen extends ConsumerWidget {
   Future<void> _invite(BuildContext context, WidgetRef ref, String deviceId, String name) async {
     try {
       final inv = await ref.read(linkActionsProvider).createInvite(deviceId);
-      if (context.mounted) await _showInvite(context, inv, name);
+      if (context.mounted) _showInvite(context, inv, name);
     } catch (e) {
       if (context.mounted) showNote(context, 'Could not create an invite: $e');
     }
@@ -177,6 +173,34 @@ class ParentsScreen extends ConsumerWidget {
       ));
 
   static String _until(DateTime t) => DateFormat('MMM d, h:mm a').format(t);
+}
+
+/// "Invite a parent", greyed out with a "Creating…" label until the code is ready.
+class _InviteButton extends StatefulWidget {
+  const _InviteButton({required this.onPressed});
+  final Future<void> Function()? onPressed;
+  @override
+  State<_InviteButton> createState() => _InviteButtonState();
+}
+
+class _InviteButtonState extends State<_InviteButton> {
+  bool _busy = false;
+
+  @override
+  Widget build(BuildContext context) => FilledButton.icon(
+        onPressed: widget.onPressed == null || _busy
+            ? null
+            : () async {
+                setState(() => _busy = true);
+                try {
+                  await widget.onPressed!();
+                } finally {
+                  if (mounted) setState(() => _busy = false);
+                }
+              },
+        icon: const Icon(Symbols.person_add_rounded),
+        label: Text(_busy ? 'Creating…' : 'Invite a parent'),
+      );
 }
 
 class _Chip extends StatelessWidget {

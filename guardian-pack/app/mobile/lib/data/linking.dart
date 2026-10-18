@@ -133,63 +133,70 @@ class LinkActions {
       throw const LinkError('This invite has expired. Ask for a new one.');
     }
     final deviceId = m['deviceId'] as String;
-    await _link(me, deviceId, code);
-    if (m['kind'] == 'invite') await snap.reference.delete().catchError((_) {});   // one use only
-    return deviceId;
+    return _link(me, deviceId, code, retireInvite: m['kind'] == 'invite' ? snap.reference : null);
   }
 
-  Future<String> _link(UserProfile me, String deviceId, String? code) async {
+  /// One atomic write: the device on my profile, me on its member list, and the
+  /// invite used up (the rules check each against the batch's result).
+  Future<String> _link(UserProfile me, String deviceId, String? code, {DocumentReference? retireInvite}) async {
     if (!me.deviceIds.contains(deviceId)) {
-      await _db.collection('users').doc(me.uid).set({
-        'deviceIds': FieldValue.arrayUnion([deviceId]),
-        'linkCode': ?code,
-      }, SetOptions(merge: true));
-      await ensureMember(deviceId, me);
+      final batch = _db.batch()
+        ..set(_db.collection('users').doc(me.uid), {
+          'deviceIds': FieldValue.arrayUnion([deviceId]),
+          'linkCode': ?code,
+        }, SetOptions(merge: true));
+      if (deviceId != demoDeviceId) batch.set(_member(deviceId, me.uid), _memberFields(me, joined: true));
+      if (retireInvite != null) batch.delete(retireInvite);
+      await batch.commit();
     }
     _ref.read(selectedDeviceProvider.notifier).select(deviceId);
     return deviceId;
   }
 
-  /// Removes the device from my account. The others keep their access.
-  Future<void> unlink(String deviceId) async {
+  /// Removes the device from my account. The others keep their access. Not awaited
+  /// by the UI past the local write: the cache updates at once, the server follows.
+  Future<void> unlink(String deviceId) {
     final me = _me;
-    await _member(deviceId, me.uid).delete().catchError((_) {});
-    await _db.collection('users').doc(me.uid).update({'deviceIds': FieldValue.arrayRemove([deviceId])});
     if (_ref.read(selectedDeviceProvider) == deviceId) _ref.read(selectedDeviceProvider.notifier).clear();
+    final batch = _db.batch()..update(_db.collection('users').doc(me.uid), {'deviceIds': FieldValue.arrayRemove([deviceId])});
+    if (deviceId != demoDeviceId) batch.delete(_member(deviceId, me.uid));
+    return batch.commit();
   }
+
+  Map<String, Object> _memberFields(UserProfile me, {bool joined = false}) => {
+        'name': me.displayName,
+        'email': me.email,
+        'photo': ?me.photo,
+        if (joined) 'joinedAt': FieldValue.serverTimestamp(),
+      };
 
   /// The demo device is shared by every new account, so nobody is listed on it.
   Future<void> ensureMember(String deviceId, UserProfile me) async {
     if (deviceId == demoDeviceId) return;
     final ref = _member(deviceId, me.uid);
     final cur = (await ref.get()).data();
-    final fields = {'name': me.displayName, 'email': me.email, 'photo': me.photo};
     if (cur == null) {
-      await ref.set({...fields, 'joinedAt': FieldValue.serverTimestamp()}..removeWhere((_, v) => v == null));
-    } else if (fields.entries.any((e) => cur[e.key] != e.value)) {
-      await ref.update({for (final e in fields.entries) e.key: e.value ?? FieldValue.delete()});
+      await ref.set(_memberFields(me, joined: true));
+    } else if (cur['name'] != me.displayName || cur['email'] != me.email || cur['photo'] != me.photo) {
+      await ref.update({'name': me.displayName, 'email': me.email, 'photo': me.photo ?? FieldValue.delete()});
     }
   }
 
-  /// Makes a one-time invite for [deviceId]; retries on the (unlikely) code clash.
+  /// Makes a one-time invite for [deviceId]. Waits a few seconds for the server, then
+  /// trusts the local write (it syncs when the network catches up) so the code shows
+  /// without a long pause. A random 8-character code clashing is not a real risk.
   Future<Invite> createInvite(String deviceId) async {
     final me = _me;
     final expires = DateTime.now().add(inviteLifetime);
-    for (var attempt = 0;; attempt++) {
-      final code = newCode();
-      try {
-        await _db.collection('linkcodes').doc(code).set({
-          'deviceId': deviceId,
-          'kind': 'invite',
-          'createdBy': me.uid,
-          'createdByName': me.displayName,
-          'expiresAt': Timestamp.fromDate(expires),
-        });
-        return Invite(code: code, deviceId: deviceId, expiresAt: expires);
-      } on FirebaseException catch (e) {
-        if (e.code != 'permission-denied' || attempt >= 2) rethrow;
-      }
-    }
+    final code = newCode();
+    await _db.collection('linkcodes').doc(code).set({
+      'deviceId': deviceId,
+      'kind': 'invite',
+      'createdBy': me.uid,
+      'createdByName': me.displayName,
+      'expiresAt': Timestamp.fromDate(expires),
+    }).timeout(const Duration(seconds: 4), onTimeout: () {});
+    return Invite(code: code, deviceId: deviceId, expiresAt: expires);
   }
 
   Future<void> cancelInvite(String code) => _db.collection('linkcodes').doc(code).delete();
