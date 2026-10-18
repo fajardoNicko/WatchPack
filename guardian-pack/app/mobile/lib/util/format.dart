@@ -29,3 +29,6 @@ String fmtKm(double meters) => meters < 1000 ? '${meters.round()} m' : '${(meter
 String fmtSpeed(double kmh) => '${kmh < 10 ? kmh.toStringAsFixed(1) : kmh.round()} km/h';
 
 bool sameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
+
+/// Midnight of [t]'s day — the stable key for per-day providers.
+DateTime dateOnly(DateTime t) => DateTime(t.year, t.month, t.day);

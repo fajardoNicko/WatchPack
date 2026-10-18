@@ -42,7 +42,9 @@ final deviceProvider = StreamProvider<Device>((ref) {
 });
 
 /// Fixes for one calendar day, oldest first. Used by the map trail and trip history.
-final fixesForDayProvider = StreamProvider.family<List<Fix>, DateTime>((ref, day) {
+/// Key it with a midnight (`dateOnly`), never a raw DateTime.now() — every distinct
+/// key is its own Firestore listener.
+final fixesForDayProvider = StreamProvider.autoDispose.family<List<Fix>, DateTime>((ref, day) {
   final id = _requireDevice(ref);
   final start = DateTime(day.year, day.month, day.day);
   final end = start.add(const Duration(days: 1));
