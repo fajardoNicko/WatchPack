@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../auth/auth.dart';
+import '../../data/linking.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
 import '../../theme/theme_mode.dart';
@@ -10,6 +11,8 @@ import '../../theme/tokens.dart';
 import '../motion.dart';
 import '../widgets.dart';
 import 'link_device_screen.dart';
+import 'parents_screen.dart';
+import 'security_screen.dart';
 
 /// Settings & Controls tab.
 class SettingsScreen extends ConsumerWidget {
@@ -20,6 +23,8 @@ class SettingsScreen extends ConsumerWidget {
     final device = ref.watch(deviceProvider).value;
     final profile = ref.watch(userProfileProvider).value;
     final mode = ref.watch(themeModeProvider);
+    final parents = ref.watch(membersProvider).value?.length ?? 0;
+    ref.watch(memberSyncProvider);
     final t = context.text;
 
     return Scaffold(
@@ -66,9 +71,9 @@ class SettingsScreen extends ConsumerWidget {
                 child: _BigCard(
                   icon: Symbols.groups_rounded,
                   title: 'Parental account',
-                  body: 'Add another parent for shared monitoring',
-                  action: 'Add parent',
-                  onTap: () => showNote(context, 'Invites arrive with push notifications.'),
+                  body: parents > 1 ? '$parents parents can see ${device?.name ?? 'this device'}' : 'Add another parent for shared monitoring',
+                  action: parents > 1 ? 'Manage' : 'Add parent',
+                  onTap: () => ParentsScreen.open(context),
                 ),
               ),
             ]),
@@ -92,7 +97,7 @@ class SettingsScreen extends ConsumerWidget {
                   onTap: profile == null ? null : () => _editName(context, ref, profile),
                 ),
                 Divider(color: context.wp.line),
-                _Row(icon: Symbols.lock_rounded, title: 'Security & privacy', onTap: () => showNote(context, 'Coming soon.')),
+                _Row(icon: Symbols.lock_rounded, title: 'Security & privacy', onTap: () => SecurityScreen.open(context)),
                 Divider(color: context.wp.line),
                 _Row(
                   icon: Symbols.palette_rounded,

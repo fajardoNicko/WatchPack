@@ -8,9 +8,10 @@ import '../theme/tokens.dart';
 /// Navy header with the two-tone wordmark. Replace the text with the SVG logo
 /// once the design team sends it (assets/images/logo.svg).
 class WpHeader extends StatelessWidget implements PreferredSizeWidget {
-  const WpHeader({super.key, this.title, this.subtitle, this.trailing});
+  const WpHeader({super.key, this.title, this.subtitle, this.trailing, this.back = false});
   final String? title, subtitle;
   final Widget? trailing;
+  final bool back;                        // pushed screens: back arrow before the title
 
   @override
   Size get preferredSize => Size.fromHeight(subtitle == null ? 56 : 76);
@@ -25,9 +26,10 @@ class WpHeader extends StatelessWidget implements PreferredSizeWidget {
         child: SizedBox(
           height: preferredSize.height,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: WpSpace.l),
+            padding: EdgeInsets.only(left: back ? WpSpace.xs : WpSpace.l, right: WpSpace.l),
             child: Row(
               children: [
+                if (back) const BackButton(color: Colors.white),
                 Expanded(
                   child: title == null
                       ? const Wordmark()

@@ -1,0 +1,205 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:material_symbols_icons/symbols.dart';
+import 'package:share_plus/share_plus.dart';
+
+import '../../auth/auth.dart';
+import '../../data/linking.dart';
+import '../../data/repo.dart';
+import '../../theme/tokens.dart';
+import '../motion.dart';
+import '../widgets.dart';
+
+/// Parental account: who can see the device, and invites for another parent.
+class ParentsScreen extends ConsumerWidget {
+  const ParentsScreen({super.key});
+
+  static Future<void> open(BuildContext context) =>
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ParentsScreen()));
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final device = ref.watch(deviceProvider).value;
+    final deviceId = ref.watch(deviceIdProvider);
+    final members = ref.watch(membersProvider);
+    final invites = ref.watch(myInvitesProvider).value ?? const <Invite>[];
+    final me = ref.watch(authStateProvider).value?.uid;
+    final name = device?.name ?? 'your child';
+    final demo = deviceId == demoDeviceId;
+    final t = context.text;
+
+    return Scaffold(
+      appBar: WpHeader(
+        title: 'Parental account',
+        subtitle: 'Who can see $name',
+        back: true,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(WpSpace.l, WpSpace.s, WpSpace.l, WpSpace.xl),
+        children: [
+          if (demo) ...[
+            const SizedBox(height: WpSpace.l),
+            const _Note(
+              icon: Symbols.info_rounded,
+              text: 'This is the shared demo device — every new account can see it, so there is no parent list. '
+                  'Invites work on real WatchPacks.',
+            ),
+          ] else ...[
+            const SectionTitle('Parents'),
+            members.when(
+              loading: () => const Skeleton(height: 72),
+              error: (e, _) => Text('$e', style: t.bodySmall),
+              data: (list) => WpCard(
+                padding: EdgeInsets.zero,
+                child: Column(children: [
+                  for (final (i, m) in list.indexed) ...[
+                    if (i > 0) Divider(color: context.wp.line),
+                    FadeSlideIn(
+                      index: i,
+                      child: ListTile(
+                        leading: Avatar(name: m.name, photo: m.photo, size: 40),
+                        title: Text(m.name.isEmpty ? m.email : m.name, style: t.bodyMedium),
+                        subtitle: Text(m.email, style: t.bodySmall),
+                        trailing: m.uid == me ? const _Chip('You') : null,
+                      ),
+                    ),
+                  ],
+                  if (list.isEmpty) Padding(padding: const EdgeInsets.all(WpSpace.l), child: Text('Only you so far.', style: t.bodySmall)),
+                ]),
+              ),
+            ),
+            const SizedBox(height: WpSpace.s),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: WpSpace.xs),
+              child: Text('Every parent here sees the live location, history and alerts, and gets the same push notifications. '
+                  'Each parent can leave from Security & privacy on their own phone.', style: t.bodySmall),
+            ),
+            const SizedBox(height: WpSpace.xl),
+            FilledButton.icon(
+              onPressed: deviceId == null ? null : () => _invite(context, ref, deviceId, name),
+              icon: const Icon(Symbols.person_add_rounded),
+              label: const Text('Invite a parent'),
+            ),
+            if (invites.isNotEmpty) ...[
+              const SectionTitle('Open invites'),
+              WpCard(
+                padding: EdgeInsets.zero,
+                child: Column(children: [
+                  for (final (i, inv) in invites.indexed) ...[
+                    if (i > 0) Divider(color: context.wp.line),
+                    ListTile(
+                      leading: IconDisc(Symbols.key_rounded, color: inv.expired ? context.wp.muted : WpColors.navy),
+                      title: Text(fmtCode(inv.code), style: t.bodyMedium!.copyWith(fontFeatures: const [FontFeature.tabularFigures()], letterSpacing: 1)),
+                      subtitle: Text(inv.expired ? 'Expired' : 'Until ${_until(inv.expiresAt)}', style: t.bodySmall),
+                      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                        if (!inv.expired)
+                          IconButton(tooltip: 'Share', onPressed: () => _share(inv, name), icon: Icon(Symbols.share_rounded, color: context.wp.muted, size: 20)),
+                        IconButton(
+                          tooltip: inv.expired ? 'Remove' : 'Cancel invite',
+                          onPressed: () => ref.read(linkActionsProvider).cancelInvite(inv.code),
+                          icon: Icon(Symbols.close_rounded, color: context.wp.muted, size: 20),
+                        ),
+                      ]),
+                    ),
+                  ],
+                ]),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _invite(BuildContext context, WidgetRef ref, String deviceId, String name) async {
+    try {
+      final inv = await ref.read(linkActionsProvider).createInvite(deviceId);
+      if (context.mounted) await _showInvite(context, inv, name);
+    } catch (e) {
+      if (context.mounted) showNote(context, 'Could not create an invite: $e');
+    }
+  }
+
+  Future<void> _showInvite(BuildContext context, Invite inv, String name) => showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        builder: (c) {
+          final t = c.text;
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(WpSpace.xl, 0, WpSpace.xl, WpSpace.l),
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                Text('Invite code', style: t.titleMedium, textAlign: TextAlign.center),
+                const SizedBox(height: WpSpace.l),
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: WpSpace.l),
+                  decoration: BoxDecoration(color: WpColors.cyanSoft, borderRadius: BorderRadius.circular(WpRadius.card)),
+                  child: Text(fmtCode(inv.code),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontFamily: 'Inter', fontSize: 32, fontWeight: FontWeight.w700, letterSpacing: 4, color: WpColors.navy)),
+                ),
+                const SizedBox(height: WpSpace.m),
+                Text('The other parent signs up in WatchPack, then enters this code under Settings → Device linking. '
+                    'Works once, until ${_until(inv.expiresAt)}.', style: t.bodySmall, textAlign: TextAlign.center),
+                const SizedBox(height: WpSpace.xl),
+                Row(children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        await Clipboard.setData(ClipboardData(text: fmtCode(inv.code)));
+                        if (c.mounted) showNote(c, 'Code copied.');
+                      },
+                      icon: const Icon(Symbols.content_copy_rounded),
+                      label: const Text('Copy'),
+                    ),
+                  ),
+                  const SizedBox(width: WpSpace.m),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () => _share(inv, name),
+                      icon: const Icon(Symbols.share_rounded),
+                      label: const Text('Share'),
+                    ),
+                  ),
+                ]),
+              ]),
+            ),
+          );
+        },
+      );
+
+  static Future<void> _share(Invite inv, String name) => SharePlus.instance.share(ShareParams(
+        subject: 'WatchPack invite',
+        text: 'Join me on WatchPack to look after $name. Install WatchPack, create an account, then go to '
+            'Settings → Device linking and enter the code ${fmtCode(inv.code)} (valid until ${_until(inv.expiresAt)}).',
+      ));
+
+  static String _until(DateTime t) => DateFormat('MMM d, h:mm a').format(t);
+}
+
+class _Chip extends StatelessWidget {
+  const _Chip(this.label);
+  final String label;
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: WpSpace.s, vertical: 2),
+        decoration: BoxDecoration(color: WpColors.cyanSoft, borderRadius: BorderRadius.circular(WpRadius.chip)),
+        child: Text(label, style: context.text.labelSmall!.copyWith(color: WpColors.navy)),
+      );
+}
+
+class _Note extends StatelessWidget {
+  const _Note({required this.icon, required this.text});
+  final IconData icon;
+  final String text;
+  @override
+  Widget build(BuildContext context) => WpCard(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(icon, color: WpColors.cyan, size: 20),
+          const SizedBox(width: WpSpace.m),
+          Expanded(child: Text(text, style: context.text.bodySmall)),
+        ]),
+      );
+}
