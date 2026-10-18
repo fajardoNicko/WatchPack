@@ -4,24 +4,23 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../data/models.dart';
 import '../../data/repo.dart';
+import '../../data/unread.dart';
 import '../../theme/tokens.dart';
 import '../../util/format.dart';
 import '../motion.dart';
+import '../nav.dart';
 import '../widgets.dart';
+import 'alert_sheet.dart';
 import 'zone_editor.dart';
 
 /// Notification tab: safety zones + system triggers, and the alert feed.
-class AlertsScreen extends ConsumerStatefulWidget {
+class AlertsScreen extends ConsumerWidget {
   const AlertsScreen({super.key});
-  @override
-  ConsumerState<AlertsScreen> createState() => _AlertsScreenState();
-}
-
-class _AlertsScreenState extends ConsumerState<AlertsScreen> {
-  int _tab = 0;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tab = ref.watch(alertsSegmentProvider);
+    final unread = ref.watch(unreadAlertsProvider);
     return Scaffold(
       appBar: const WpHeader(title: 'Notifications', subtitle: 'Proactive protection'),
       body: Column(
@@ -31,13 +30,17 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
             child: SizedBox(
               width: double.infinity,
               child: SegmentedButton<int>(
-                segments: const [
-                  ButtonSegment(value: 0, label: Text('Zones & triggers'), icon: Icon(Symbols.verified_user_rounded, size: 18)),
-                  ButtonSegment(value: 1, label: Text('Alert feed'), icon: Icon(Symbols.notifications_rounded, size: 18)),
+                segments: [
+                  const ButtonSegment(value: 0, label: Text('Zones & triggers'), icon: Icon(Symbols.verified_user_rounded, size: 18)),
+                  ButtonSegment(
+                    value: 1,
+                    label: Text(unread > 0 && tab != 1 ? 'Alert feed ($unread)' : 'Alert feed'),
+                    icon: const Icon(Symbols.notifications_rounded, size: 18),
+                  ),
                 ],
-                selected: {_tab},
+                selected: {tab},
                 showSelectedIcon: false,
-                onSelectionChanged: (s) => setState(() => _tab = s.first),
+                onSelectionChanged: (s) => ref.read(alertsSegmentProvider.notifier).set(s.first),
                 style: SegmentedButton.styleFrom(
                   selectedBackgroundColor: WpColors.navy,
                   selectedForegroundColor: Colors.white,
@@ -50,7 +53,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
           Expanded(
             child: AnimatedSwitcher(
               duration: WpMotion.base,
-              child: _tab == 0 ? const _ZonesTab(key: ValueKey(0)) : const _FeedTab(key: ValueKey(1)),
+              child: tab == 0 ? const _ZonesTab(key: ValueKey(0)) : const _FeedTab(key: ValueKey(1)),
             ),
           ),
         ],
@@ -303,6 +306,11 @@ class _FeedTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final alerts = ref.watch(alertsProvider);
     final t = context.text;
+    // Open on screen = read. The badge clears once the feed has actually been shown.
+    final id = ref.watch(deviceIdProvider);
+    if (id != null && ref.watch(tabProvider) == 2 && ref.watch(unreadAlertsProvider) > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => ref.read(alertsSeenProvider.notifier).markSeen(id));
+    }
     return alerts.when(
       loading: () => const Padding(padding: EdgeInsets.all(WpSpace.l), child: Column(children: [Skeleton(height: 72), SizedBox(height: WpSpace.m), Skeleton(height: 72)])),
       error: (e, _) => Center(child: Text('$e', style: t.bodySmall)),
@@ -319,6 +327,7 @@ class _FeedTab extends ConsumerWidget {
                   if (showDay) Padding(padding: const EdgeInsets.only(bottom: WpSpace.s, left: WpSpace.xs), child: Text(sameDay(a.ts, DateTime.now()) ? 'Today' : fmtDayShort(a.ts), style: t.labelSmall)),
                   WpCard(
                     padding: const EdgeInsets.all(WpSpace.m),
+                    onTap: () => showAlertSheet(context, a),
                     child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       IconDisc(alertIcon(a.type), color: alertColor(a.type)),
                       const SizedBox(width: WpSpace.m),
