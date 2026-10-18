@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/models.dart';
 import '../../data/quakes.dart';
@@ -120,6 +121,7 @@ class _StatusCard extends ConsumerWidget {
     final t = context.text;
     return WpCard(
       padding: const EdgeInsets.fromLTRB(WpSpace.l, WpSpace.m, WpSpace.l, WpSpace.m),
+      alert: device.value?.status == DeviceStatus.sos,
       child: device.when(
         loading: () => const _CardSkeleton(),
         error: (e, _) => Text('Could not load device: $e', style: t.bodySmall),
@@ -133,10 +135,11 @@ class _StatusCard extends ConsumerWidget {
                 children: [
                   StatusDot(d.status, size: 12),
                   const SizedBox(width: WpSpace.s),
-                  Text(sos ? 'SOS — ${d.name} needs help' : 'Real-time tracking',
-                      style: t.titleSmall!.copyWith(color: sos ? WpColors.red : null)),
-                  const Spacer(),
-                  Text(fmtRelative(d.lastSeen), style: t.bodySmall),
+                  Expanded(
+                    child: Text(sos ? 'SOS — ${d.name} needs help' : 'Real-time tracking',
+                        style: t.titleSmall!.copyWith(color: sos ? WpColors.red : null), overflow: TextOverflow.ellipsis),
+                  ),
+                  Text(sos && d.sosAt != null ? 'since ${fmtTime(d.sosAt!)}' : fmtRelative(d.lastSeen), style: t.bodySmall),
                 ],
               ),
               const SizedBox(height: WpSpace.s),
@@ -168,6 +171,13 @@ class _StatusCard extends ConsumerWidget {
                           Icon(_batteryIcon(d.battery), size: 16, color: d.battery <= 15 ? WpColors.red : context.wp.muted),
                           const SizedBox(width: WpSpace.xs),
                           Text('${d.battery}%', style: t.bodySmall),
+                          if (d.csq != null && d.status != DeviceStatus.offline) ...[
+                            const SizedBox(width: WpSpace.m),
+                            Tooltip(
+                              message: 'Mobile signal',
+                              child: Icon(_signalIcon(d.csq!), size: 16, color: context.wp.muted),
+                            ),
+                          ],
                           if (d.insideZoneId != null) ...[
                             const SizedBox(width: WpSpace.m),
                             Icon(Symbols.verified_user_rounded, size: 16, color: WpColors.green),
@@ -192,32 +202,37 @@ class _StatusCard extends ConsumerWidget {
               Divider(color: context.wp.line),
               const SizedBox(height: WpSpace.s),
               Row(
-                children: [
-                  _Action(icon: Symbols.history_rounded, label: 'History', onTap: onHistory),
-                  _Action(
-                    icon: Symbols.notifications_active_rounded,
-                    label: d.buzz ? 'Buzzing…' : 'Find device',
-                    primary: true,
-                    onTap: d.buzz
-                        ? null
-                        : () async {
-                            await ref.read(deviceActionsProvider).requestBuzz(d.cmdId);
-                            if (context.mounted) showNote(context, 'Buzz sent. ${d.name}\'s WatchPack beeps within 10 seconds.');
-                          },
-                  ),
-                  _Action(
-                    icon: Symbols.share_rounded,
-                    label: 'Share',
-                    onTap: d.position == null
-                        ? null
-                        : () async {
-                            final p = d.position!;
-                            await Clipboard.setData(ClipboardData(
-                                text: 'https://maps.google.com/?q=${p.latitude.toStringAsFixed(5)},${p.longitude.toStringAsFixed(5)}'));
-                            if (context.mounted) showNote(context, 'Map link copied.');
-                          },
-                  ),
-                ],
+                children: sos
+                    ? [
+                        _Action(
+                          icon: Symbols.directions_rounded,
+                          label: 'Directions',
+                          onTap: d.position == null ? null : () => _open(context, _directionsUrl(d.position!)),
+                        ),
+                        _Action(
+                          icon: Symbols.call_rounded,
+                          label: 'Call family',
+                          primary: true,
+                          danger: true,
+                          onTap: () => _callFamily(context, d),
+                        ),
+                        _Action(icon: Symbols.share_rounded, label: 'Share', onTap: d.position == null ? null : () => _share(d)),
+                      ]
+                    : [
+                        _Action(icon: Symbols.history_rounded, label: 'History', onTap: onHistory),
+                        _Action(
+                          icon: Symbols.notifications_active_rounded,
+                          label: d.buzz ? 'Buzzing…' : 'Find device',
+                          primary: true,
+                          onTap: d.buzz
+                              ? null
+                              : () async {
+                                  await ref.read(deviceActionsProvider).requestBuzz(d.cmdId);
+                                  if (context.mounted) showNote(context, 'Buzz sent. ${d.name}\'s WatchPack beeps within 10 seconds.');
+                                },
+                        ),
+                        _Action(icon: Symbols.share_rounded, label: 'Share', onTap: d.position == null ? null : () => _share(d)),
+                      ],
               ),
             ],
           );
@@ -225,6 +240,55 @@ class _StatusCard extends ConsumerWidget {
       ),
     );
   }
+
+  static String _mapsUrl(LatLng p) => 'https://maps.google.com/?q=${p.latitude.toStringAsFixed(5)},${p.longitude.toStringAsFixed(5)}';
+
+  static Uri _directionsUrl(LatLng p) =>
+      Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${p.latitude.toStringAsFixed(5)},${p.longitude.toStringAsFixed(5)}');
+
+  Future<void> _share(Device d) => SharePlus.instance.share(ShareParams(
+        subject: '${d.name}\'s location',
+        text: '${d.name}\'s location from WatchPack (${fmtTime(d.lastSeen ?? DateTime.now())}): ${_mapsUrl(d.position!)}',
+      ));
+
+  static Future<void> _open(BuildContext context, Uri uri) async {
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && context.mounted) {
+      showNote(context, 'No app on this phone can open that.');
+    }
+  }
+
+  Future<void> _callFamily(BuildContext context, Device d) async {
+    if (d.contacts.isEmpty) {
+      showNote(context, 'No family contacts yet — add them in Settings.');
+      return;
+    }
+    final phone = d.contacts.length == 1
+        ? d.contacts.first.phone
+        : await showModalBottomSheet<String>(
+            context: context,
+            showDragHandle: true,
+            builder: (c) => SafeArea(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                for (final p in d.contacts)
+                  ListTile(
+                    leading: Avatar(name: p.name, photo: p.photo, size: 40),
+                    title: Text(p.name),
+                    subtitle: Text(p.phone),
+                    trailing: const Icon(Symbols.call_rounded, color: WpColors.green),
+                    onTap: () => Navigator.pop(c, p.phone),
+                  ),
+                const SizedBox(height: WpSpace.s),
+              ]),
+            ),
+          );
+    if (phone != null && context.mounted) await _open(context, Uri(scheme: 'tel', path: phone));
+  }
+
+  IconData _signalIcon(int csq) => csq == 99 || csq < 10
+      ? Symbols.signal_cellular_alt_1_bar_rounded
+      : csq < 18
+          ? Symbols.signal_cellular_alt_2_bar_rounded
+          : Symbols.signal_cellular_alt_rounded;
 
   IconData _batteryIcon(int pct) => pct > 80
       ? Symbols.battery_full_rounded
@@ -236,11 +300,11 @@ class _StatusCard extends ConsumerWidget {
 }
 
 class _Action extends StatelessWidget {
-  const _Action({required this.icon, required this.label, this.onTap, this.primary = false});
+  const _Action({required this.icon, required this.label, this.onTap, this.primary = false, this.danger = false});
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
-  final bool primary;
+  final bool primary, danger;
 
   @override
   Widget build(BuildContext context) {
@@ -250,7 +314,7 @@ class _Action extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: WpSpace.xs),
         child: Material(
-          color: primary ? (enabled ? WpColors.navy : context.wp.line) : Colors.transparent,
+          color: primary ? (enabled ? (danger ? WpColors.red : WpColors.navy) : context.wp.line) : Colors.transparent,
           borderRadius: BorderRadius.circular(WpRadius.button),
           child: InkWell(
             borderRadius: BorderRadius.circular(WpRadius.button),

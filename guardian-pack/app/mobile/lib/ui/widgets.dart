@@ -73,18 +73,20 @@ class Wordmark extends StatelessWidget {
 }
 
 class WpCard extends StatelessWidget {
-  const WpCard({super.key, required this.child, this.padding = const EdgeInsets.all(WpSpace.l), this.onTap});
+  const WpCard({super.key, required this.child, this.padding = const EdgeInsets.all(WpSpace.l), this.onTap, this.alert = false});
   final Widget child;
   final EdgeInsets padding;
   final VoidCallback? onTap;
+  final bool alert;                       // SOS: red outline on a red tint
 
   @override
   Widget build(BuildContext context) {
-    final card = Container(
+    final card = AnimatedContainer(
+      duration: WpMotion.base,
       decoration: BoxDecoration(
-        color: context.wp.card,
+        color: alert ? Color.alphaBlend(WpColors.red.withValues(alpha: 0.08), context.wp.card) : context.wp.card,
         borderRadius: BorderRadius.circular(WpRadius.card),
-        border: Border.all(color: context.wp.line),
+        border: Border.all(color: alert ? WpColors.red : context.wp.line, width: alert ? 1.5 : 1),
       ),
       padding: padding,
       child: child,
