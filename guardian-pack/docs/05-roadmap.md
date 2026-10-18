@@ -31,30 +31,31 @@
 - [x] `01_modem_at` — modem on, SIM ready, registered on LTE (2026-10-08: Smart, CSQ 24/31; needs a 1000 ms PWRKEY pulse, not LilyGO's 100 ms)
 - [x] `02_gps_l76k` — L76K talks (NMEA @ 9600, ~1000 valid sentences/100 s, 2026-10-08); antenna proven (4 GPS sats, 30 dB, outdoors 2026-10-09 evening) — **no fix yet**: needs a daytime try in truly open sky, antenna ≥30 cm from the board/battery
 - [x] `03_sms_send` — IO0 press → SMS accepted by the network (`+CMGS`, 2026-10-08 20:33, Smart); contacts live in git-ignored `include/secrets.h`
-- [ ] Phase 2 wiring: 5 header pins, SOS button (IO32) + buzzer driver (IO18, V_BAT) → `04_pins_test`
-- [ ] `05_data_post` — device POSTs location to backend
-- [ ] Backend stores location; simple web/app map shows the marker moving
-- [ ] `06_buzz_command` — app/endpoint → device buzzes
+- [x] Phase 2 wiring: header pins, SOS button (IO32) + buzzer driver (IO18, V_BAT) → `04_pins_test` passes (2026-10-18)
+- [ ] `05_cloud` — device writes location/battery/signal to Firestore, Find device, SOS (built; field test with a GPS fix + SMS pending)
+- [x] Backend stores location; app map shows the marker moving
+- [x] Find device — app → `cmdbox` mailbox → device buzzes (folded into `05_cloud`)
 
 ### App (WatchPack) — started early, 2026-10-08
 - [x] Flutter toolchain + Firebase project `watchpack-f9483` (see `app/README.md`)
 - [x] M1 Map Pin with demo device · M2 Trip History · zone editor · alert feed · settings
 - [x] Sign-in / create account; Firestore security rules deployed
-- [ ] Push notifications (FCM via Cloud Functions — needs Blaze plan)
-- [ ] Contact editing, second-parent invites, device link codes
-- [ ] Full requirements pass from Nicko → rebuild/adjust screens (next session)
+- [x] Push notifications — FCM from the laptop watcher (`npm run watch`), no Blaze plan needed
+- [x] Contact editing (synced to the device's SOS list), second-parent invites, pairing codes (2026-10-18)
+- [x] Security & privacy, unlink, delete account (2026-10-18)
 
 ### Phase 2 — Smart features
-- [ ] Set school in app; geofence → "arrived at school" push (fires once)
-- [ ] Weather watcher → severe-weather push
-- [ ] Earthquake watcher (USGS + PHIVOLCS) → quake push
-- [ ] Parent app screens: Map / Alerts / Device / Settings / Login
+- [x] Zones (home, school, …) → arrive/leave push, once per crossing
+- [x] Weather watcher → severe-weather push (Open-Meteo)
+- [x] Earthquake watcher (PHIVOLCS) → quake push
+- [x] Off-route alert (learned usual places)
+- [x] Parent app screens: Map / Trip History / Notifications / Settings / Login
 
 ### Phase 3 — Make it real
-- [ ] Battery reporting + low-battery alert
+- [x] Battery reporting + low-battery alert (threshold editable in the app)
 - [ ] Power tuning (intervals, sleep)
 - [ ] Enclosure + secure mount to backpack; charging (TP4056/USB-C)
-- [ ] Firestore security rules (only parent can read their device)
+- [x] Firestore security rules (only linked parents read a device; linking needs a code)
 
 ---
 
