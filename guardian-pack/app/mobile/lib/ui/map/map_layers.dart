@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../data/models.dart';
 import '../../theme/tokens.dart';
+import '../widgets.dart';
 
 /// Shared map pieces so the Map Pin and Trip History maps look identical.
 
@@ -60,6 +61,29 @@ CircleLayer zoneLayer(List<Zone> zones) => CircleLayer(circles: [
           borderStrokeWidth: 1.5,
         ),
     ]);
+
+/// The place's icon at each zone centre, so home, school, a friend's house… read at a glance.
+MarkerLayer zonePins(List<Zone> zones) => MarkerLayer(markers: [
+      for (final z in zones.where((z) => z.enabled))
+        Marker(point: z.center, width: 30, height: 30, child: _ZonePin(z)),
+    ]);
+
+class _ZonePin extends StatelessWidget {
+  const _ZonePin(this.z);
+  final Zone z;
+  @override
+  Widget build(BuildContext context) => Tooltip(
+        message: z.name,
+        child: Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: context.wp.card,
+            border: Border.all(color: WpColors.cyan, width: 2),
+          ),
+          child: Icon(zoneIcon(z.type), size: 16, fill: 1, color: WpColors.navy),
+        ),
+      );
+}
 
 PolylineLayer trailLayer(List<LatLng> points, {Color color = WpColors.red}) => PolylineLayer(polylines: [
       Polyline(points: points, color: color, strokeWidth: 4, strokeCap: StrokeCap.round, strokeJoin: StrokeJoin.round),

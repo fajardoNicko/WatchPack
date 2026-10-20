@@ -91,6 +91,7 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
                                   baseTiles(context),
                                   zoneLayer(zones.value ?? const []),
                                   if (trail.length > 1) trailLayer(trail),
+                                  zonePins(zones.value ?? const []),
                                   if (sel != null)
                                     MarkerLayer(markers: [
                                       Marker(point: sel.point, width: 20, height: 20, child: const _ScrubDot()),
