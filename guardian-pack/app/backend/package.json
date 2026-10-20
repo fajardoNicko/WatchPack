@@ -8,10 +8,12 @@
     "scrape": "node src/phivolcs.mjs",
     "quakes": "node src/run.mjs quakes",
     "watch": "node src/watch.mjs",
-    "provision": "node src/provision.mjs"
+    "provision": "node src/provision.mjs",
+    "sticker": "node src/sticker.mjs"
   },
   "dependencies": {
     "cheerio": "^1.0.0",
-    "firebase-admin": "^13.0.0"
+    "firebase-admin": "^13.0.0",
+    "qrcode": "^1.5.4"
   }
 }
