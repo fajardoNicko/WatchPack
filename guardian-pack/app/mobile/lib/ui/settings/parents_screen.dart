@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../auth/auth.dart';
@@ -86,6 +87,7 @@ class ParentsScreen extends ConsumerWidget {
                   for (final (i, inv) in invites.indexed) ...[
                     if (i > 0) Divider(color: context.wp.line),
                     ListTile(
+                      onTap: inv.expired ? null : () => _showInvite(context, inv, name),
                       leading: IconDisc(Symbols.key_rounded, color: inv.expired ? context.wp.muted : WpColors.navy),
                       title: Text(fmtCode(inv.code), style: t.bodyMedium!.copyWith(fontFeatures: const [FontFeature.tabularFigures()], letterSpacing: 1)),
                       subtitle: Text(inv.expired ? 'Expired' : 'Until ${_until(inv.expiresAt)}', style: t.bodySmall),
@@ -121,6 +123,7 @@ class ParentsScreen extends ConsumerWidget {
   Future<void> _showInvite(BuildContext context, Invite inv, String name) => showModalBottomSheet<void>(
         context: context,
         showDragHandle: true,
+        isScrollControlled: true,
         builder: (c) {
           final t = c.text;
           return SafeArea(
@@ -129,6 +132,21 @@ class ParentsScreen extends ConsumerWidget {
               child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Text('Invite code', style: t.titleMedium, textAlign: TextAlign.center),
                 const SizedBox(height: WpSpace.l),
+                // White in dark mode too: scanners want dark modules on a light ground.
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(WpSpace.m),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(WpRadius.card)),
+                    child: QrImageView(
+                      data: qrPayload(inv.code),
+                      size: 160,
+                      padding: EdgeInsets.zero,
+                      eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: WpColors.navy),
+                      dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: WpColors.navy),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: WpSpace.m),
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: WpSpace.l),
                   decoration: BoxDecoration(color: WpColors.cyanSoft, borderRadius: BorderRadius.circular(WpRadius.card)),
@@ -137,7 +155,7 @@ class ParentsScreen extends ConsumerWidget {
                       style: const TextStyle(fontFamily: 'Inter', fontSize: 32, fontWeight: FontWeight.w700, letterSpacing: 4, color: WpColors.navy)),
                 ),
                 const SizedBox(height: WpSpace.m),
-                Text('The other parent signs up in WatchPack, then enters this code under Settings → Device linking. '
+                Text('The other parent signs up in WatchPack, then scans this or types the code under Settings → Device linking. '
                     'Works once, until ${_until(inv.expiresAt)}.', style: t.bodySmall, textAlign: TextAlign.center),
                 const SizedBox(height: WpSpace.xl),
                 Row(children: [
