@@ -81,16 +81,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               baseTiles(context),
               zoneLayer(zones.value ?? const []),
               if (trail.length > 1) trailLayer(trail),
+              zonePins(zones.value ?? const []),
               quakeLayer(context, quakes.value ?? const []),
               if (pos != null)
-                MarkerLayer(markers: [
-                  Marker(
-                    point: pos,
-                    width: 44,
-                    height: 44,
-                    child: LiveMarker(status: device.value?.status ?? DeviceStatus.offline),
-                  ),
-                ]),
+                // Glides from the last fix to the new one instead of jumping. Keyed by
+                // device so switching children doesn't slide across the city.
+                TweenAnimationBuilder<LatLng>(
+                  key: ValueKey(device.value?.id),
+                  tween: _LatLngTween(end: pos),
+                  duration: const Duration(milliseconds: 900),
+                  curve: Curves.easeInOut,
+                  builder: (_, p, marker) => MarkerLayer(markers: [Marker(point: p, width: 44, height: 44, child: marker!)]),
+                  child: LiveMarker(status: device.value?.status ?? DeviceStatus.offline),
+                ),
               attribution(),
             ],
           ),
@@ -109,6 +112,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ),
     );
   }
+}
+
+class _LatLngTween extends Tween<LatLng> {
+  _LatLngTween({super.end});
+  @override
+  LatLng lerp(double t) => LatLng(
+        begin!.latitude + (end!.latitude - begin!.latitude) * t,
+        begin!.longitude + (end!.longitude - begin!.longitude) * t,
+      );
 }
 
 class _StatusCard extends ConsumerWidget {
