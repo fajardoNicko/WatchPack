@@ -31,6 +31,15 @@ String? normalizeCode(String raw) {
   return RegExp('^[$_alphabet]{8}\$').hasMatch(s) ? s : null;
 }
 
+/// What the QR on the sticker (backend/src/sticker.mjs) and on invite screens holds.
+String qrPayload(String code) => 'WATCHPACK:$code';
+
+/// A scanned QR → its code, or null if it isn't a WatchPack code. A bare code works too.
+String? codeFromScan(String raw) {
+  final m = RegExp(r'^\s*watchpack:(.+)$', caseSensitive: false).firstMatch(raw);
+  return normalizeCode(m?.group(1) ?? raw);
+}
+
 String fmtCode(String code) => code.length == 8 ? '${code.substring(0, 4)}-${code.substring(4)}' : code;
 
 class LinkError implements Exception {

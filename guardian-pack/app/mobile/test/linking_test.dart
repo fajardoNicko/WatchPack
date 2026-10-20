@@ -23,6 +23,14 @@ void main() {
     expect(fmtCode('short'), 'short');
   });
 
+  test('scanned QR codes', () {
+    expect(codeFromScan(qrPayload('K7QM2XPA')), 'K7QM2XPA');
+    expect(codeFromScan('watchpack:k7qm-2xpa'), 'K7QM2XPA');
+    expect(codeFromScan('K7QM-2XPA'), 'K7QM2XPA');                  // a bare code
+    expect(codeFromScan('https://example.com/K7QM2XPA'), isNull);     // someone else's QR
+    expect(codeFromScan('WATCHPACK:'), isNull);
+  });
+
   test('new codes are always valid', () {
     final rng = Random(7);
     for (var i = 0; i < 500; i++) {
