@@ -152,6 +152,9 @@ class DeviceActions {
     return batch.commit();
   }
 
+  /// The child's name, shown on the map and in alert texts.
+  Future<void> rename(String name) => _deviceRef(_id).update({'name': name});
+
   /// Child's photo (data URI) or null to remove it.
   Future<void> setChildPhoto(String? dataUri) =>
       _deviceRef(_id).update({'photo': dataUri ?? FieldValue.delete()});

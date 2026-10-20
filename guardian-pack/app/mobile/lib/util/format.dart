@@ -28,6 +28,15 @@ String fmtKm(double meters) => meters < 1000 ? '${meters.round()} m' : '${(meter
 
 String fmtSpeed(double kmh) => '${kmh < 10 ? kmh.toStringAsFixed(1) : kmh.round()} km/h';
 
+/// 09XXXXXXXXX, 639XXXXXXXXX or +639XXXXXXXXX → +639XXXXXXXXX; anything else → null.
+String? normalizePhPhone(String raw) {
+  final digits = raw.replaceAll(RegExp(r'[^\d+]'), '');
+  if (RegExp(r'^\+639\d{9}$').hasMatch(digits)) return digits;
+  if (RegExp(r'^09\d{9}$').hasMatch(digits)) return '+63${digits.substring(1)}';
+  if (RegExp(r'^639\d{9}$').hasMatch(digits)) return '+$digits';
+  return null;
+}
+
 bool sameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
 
 /// Midnight of [t]'s day — the stable key for per-day providers.
