@@ -71,10 +71,11 @@ async function evaluate(ref) {
         .filter((z) => distM(here, z) <= (z.radiusM ?? 200))
         .sort((a, b) => (a.radiusM ?? 200) - (b.radiusM ?? 200))[0];
       if (current) {
-        await raise(ref, d, "zone_exit", `${name} left ${current.name}`, `Exited the ${current.name} zone at ${clock()}.`);
+        // Names are free text ("Home Zone", "Mia's house"), so don't append "zone" to them.
+        await raise(ref, d, "zone_exit", `${name} left ${current.name}`, `Left at ${clock()}.`);
       }
       if (entered) {
-        await raise(ref, d, "zone_enter", `${name} arrived at ${entered.name}`, `Entered the ${entered.name} zone at ${clock()}.`);
+        await raise(ref, d, "zone_enter", `${name} arrived at ${entered.name}`, `Arrived at ${clock()}.`);
       }
       const next = entered?.id ?? null;
       if (next !== (d.insideZoneId ?? null)) patch.insideZoneId = next;
