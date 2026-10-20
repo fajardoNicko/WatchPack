@@ -33,13 +33,6 @@ class _ZoneEditorScreenState extends ConsumerState<ZoneEditorScreen> {
   bool _saving = false;
   bool _nameTouched = false;
 
-  static const _defaultNames = {
-    ZoneType.home: 'Home Zone',
-    ZoneType.school: 'School Zone',
-    ZoneType.park: 'Park Zone',
-    ZoneType.other: 'Safety Zone',
-  };
-
   @override
   void initState() {
     super.initState();
@@ -55,13 +48,13 @@ class _ZoneEditorScreenState extends ConsumerState<ZoneEditorScreen> {
 
   void _setType(ZoneType t) => setState(() {
         _type = t;
-        if (!_nameTouched) _name.text = _defaultNames[t]!;
+        if (!_nameTouched) _name.text = t.defaultName;
       });
 
   Future<void> _save() async {
     final center = _center;
     if (center == null) return;
-    final name = _name.text.trim().isEmpty ? _defaultNames[_type]! : _name.text.trim();
+    final name = _name.text.trim().isEmpty ? _type.defaultName : _name.text.trim();
     setState(() => _saving = true);
     try {
       await ref.read(deviceActionsProvider).saveZone(
@@ -171,19 +164,21 @@ class _ZoneEditorScreenState extends ConsumerState<ZoneEditorScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(children: [
-                      for (final z in ZoneType.values) ...[
-                        _TypeChip(type: z, selected: _type == z, onTap: () => _setType(z)),
-                        if (z != ZoneType.values.last) const SizedBox(width: WpSpace.s),
-                      ],
-                    ]),
+                    // Two rows of five: home, school, friend's house, family, tutor, …
+                    LayoutBuilder(builder: (_, box) {
+                      final w = (box.maxWidth - 4 * WpSpace.s) / 5;
+                      return Wrap(spacing: WpSpace.s, runSpacing: WpSpace.s, children: [
+                        for (final z in ZoneType.values)
+                          SizedBox(width: w, child: _TypeChip(type: z, selected: _type == z, onTap: () => _setType(z))),
+                      ]);
+                    }),
                     const SizedBox(height: WpSpace.m),
                     TextField(
                       controller: _name,
                       onChanged: (_) => _nameTouched = true,
                       textCapitalization: TextCapitalization.words,
                       decoration: InputDecoration(
-                        hintText: _defaultNames[_type],
+                        hintText: _type.example,
                         labelText: 'Name',
                         isDense: true,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(WpRadius.button)),
@@ -229,10 +224,7 @@ class _TypeChip extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final label = switch (type) { ZoneType.home => 'Home', ZoneType.school => 'School', ZoneType.park => 'Park', ZoneType.other => 'Other' };
-    return Expanded(
-      child: Material(
+  Widget build(BuildContext context) => Material(
         color: selected ? WpColors.navy : context.wp.bg,
         borderRadius: BorderRadius.circular(WpRadius.button),
         child: InkWell(
@@ -243,11 +235,12 @@ class _TypeChip extends StatelessWidget {
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               Icon(zoneIcon(type), fill: 1, size: 20, color: selected ? Colors.white : context.wp.muted),
               const SizedBox(height: 2),
-              Text(label, style: context.text.labelMedium!.copyWith(color: selected ? Colors.white : context.wp.ink)),
+              Text(type.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.labelMedium!.copyWith(color: selected ? Colors.white : context.wp.ink)),
             ]),
           ),
         ),
-      ),
-    );
-  }
+      );
 }

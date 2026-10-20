@@ -86,7 +86,7 @@ class _ZonesTab extends ConsumerWidget {
           loading: () => const Column(children: [Skeleton(height: 72), SizedBox(height: WpSpace.m), Skeleton(height: 72)]),
           error: (e, _) => Text('$e', style: t.bodySmall),
           data: (list) => list.isEmpty
-              ? const EmptyState(icon: Symbols.map_rounded, title: 'No zones yet', body: 'Add Home and School to get arrival and departure alerts.')
+              ? const EmptyState(icon: Symbols.map_rounded, title: 'No zones yet', body: 'Register home, school, a friend\'s or relative\'s house, the tutor… to get arrival and departure alerts.')
               : Column(children: [
                   for (final (i, z) in list.indexed) ...[
                     FadeSlideIn(
@@ -251,7 +251,7 @@ class _ZoneCard extends StatelessWidget {
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(z.name, style: t.titleSmall),
-            Text('${z.radiusM.round()} m radius${deviceName != null ? '  ·  $deviceName' : ''}', style: t.bodySmall),
+            Text('${z.type.label}  ·  ${z.radiusM.round()} m radius${deviceName != null ? '  ·  $deviceName' : ''}', style: t.bodySmall),
           ]),
         ),
         Switch(value: z.enabled, onChanged: onToggle),

@@ -103,7 +103,22 @@ class Fix {
   }
 }
 
-enum ZoneType { home, school, park, other }
+/// Kinds of registered places. Stored by name, so only ever add to this list.
+enum ZoneType {
+  home('Home', 'Home Zone', 'Home'),
+  school('School', 'School Zone', 'e.g. Malinta Elementary'),
+  friend('Friend', 'Friend\'s House', 'e.g. Mia\'s house'),
+  family('Family', 'Relative\'s House', 'e.g. Lola\'s house'),
+  tutor('Tutor', 'Tutor', 'e.g. Kumon, review center'),
+  sports('Sports', 'Practice', 'e.g. swimming, football'),
+  church('Church', 'Church', 'e.g. parish, chapel'),
+  park('Park', 'Park Zone', 'e.g. plaza, playground'),
+  terminal('Terminal', 'Terminal', 'e.g. jeepney or bus stop'),
+  other('Other', 'Safety Zone', 'Any place you want alerts for');
+
+  const ZoneType(this.label, this.defaultName, this.example);
+  final String label, defaultName, example;
+}
 
 class Zone {
   const Zone({

@@ -148,7 +148,13 @@ class StatusDot extends StatelessWidget {
 IconData zoneIcon(ZoneType t) => switch (t) {
       ZoneType.home => Symbols.home_rounded,
       ZoneType.school => Symbols.school_rounded,
+      ZoneType.friend => Symbols.diversity_3_rounded,
+      ZoneType.family => Symbols.family_restroom_rounded,
+      ZoneType.tutor => Symbols.menu_book_rounded,
+      ZoneType.sports => Symbols.sports_soccer_rounded,
+      ZoneType.church => Symbols.church_rounded,
       ZoneType.park => Symbols.park_rounded,
+      ZoneType.terminal => Symbols.directions_bus_rounded,
       ZoneType.other => Symbols.location_on_rounded,
     };
 
