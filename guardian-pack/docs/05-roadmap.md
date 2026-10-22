@@ -32,7 +32,7 @@
 - [x] `02_gps_l76k` — L76K talks (NMEA @ 9600, 2026-10-08); **first fix 2026-10-18** once BeiDou was switched on (`$PCAS04,7`), 23 sats, hdop 0.6
 - [x] `03_sms_send` — IO0 press → SMS accepted by the network (`+CMGS`, 2026-10-08 20:33, Smart); contacts live in git-ignored `include/secrets.h`
 - [x] Phase 2 wiring: header pins, SOS button (IO32) + buzzer driver (IO18, V_BAT) → `04_pins_test` passes (2026-10-18)
-- [ ] `05_cloud` — device writes location/battery/signal to Firestore, Find device, SOS (built, flashed 2026-10-22; field test pending — on 10-22 the modem reported **SIM not inserted** and the battery read 0.28 V, i.e. no cell: reseat both first)
+- [ ] `05_cloud` — device writes location/battery/signal to Firestore, Find device, SOS (built, flashed 2026-10-22; field test pending — on 10-22 the SOS button fired correctly on the bench; the SIM wasn't in yet, so texts and posts waited)
 - [x] Backend stores location; app map shows the marker moving
 - [x] Find device — app → `cmdbox` mailbox → device buzzes (folded into `05_cloud`)
 
