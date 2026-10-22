@@ -72,10 +72,13 @@ export async function quakesJob() {
   console.log(`[${new Date().toISOString()}] quakes: ${events.length} scraped, ${recent.length} kept, ${strong.length} ≥M${MIN_MAG}, ${alerts} new alerts`);
 }
 
-/** Sends a push to every parent linked to the device; prunes dead tokens. */
+/** Sends a push to every parent linked to the device, except ones another parent
+ *  removed (devices/{id}/removed/{uid}); prunes dead tokens. */
 export async function pushToParents(deviceId, { title, body, data = {} }) {
   const parents = await db.collection("users").where("deviceIds", "array-contains", deviceId).get();
+  const removed = new Set((await db.collection(`devices/${deviceId}/removed`).get()).docs.map((d) => d.id));
   for (const p of parents.docs) {
+    if (removed.has(p.id)) continue;
     const tokens = p.data().fcmTokens ?? [];
     if (!tokens.length) continue;
     const res = await fcm.sendEachForMulticast({
