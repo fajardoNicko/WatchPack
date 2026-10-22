@@ -9,3 +9,4 @@ mobile/*.iml
 backend/node_modules/
 # Pairing stickers carry the device's link code.
 backend/stickers/
+rules-test/node_modules/
