@@ -394,14 +394,24 @@ void setup() {
 }
 
 // Bench testing over USB: type "sos" in the serial monitor to fire an SOS without the
-// button. Needs the cable plugged in, so it can't be triggered from outside.
+// button, or "text 09XXXXXXXXX" to send one test SMS. Needs the cable plugged in, so it
+// can't be triggered from outside.
 static void serialCommands() {
     static String cmd;
     while (Serial.available()) {
         const char c = Serial.read();
-        if (c != '\n' && c != '\r') { if (cmd.length() < 16) cmd += c; continue; }
+        if (c != '\n' && c != '\r') { if (cmd.length() < 32) cmd += c; continue; }
         cmd.trim();
         if (cmd == "sos") { Serial.println("serial: SOS requested"); sosRequested = true; }
+        if (cmd.startsWith("text ")) {
+            String n = cmd.substring(5);
+            n.replace(" ", "");
+            if (n.startsWith("09")) n = "+63" + n.substring(1);
+            if (!validPhone(n)) Serial.println("serial: text needs a number like 09XXXXXXXXX");
+            else if (!modemOk) Serial.println("serial: modem is off");
+            else Serial.printf("  sms %s %s\n", n.c_str(),
+                               sendSms(n.c_str(), String("WatchPack test text from ") + CHILD_NAME + "'s device. SOS alerts will come from this number.") ? "SENT" : "FAILED");
+        }
         cmd = "";
     }
 }
