@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../auth/auth.dart';
+import '../data/linking.dart';
 import '../data/repo.dart';
 import '../data/unread.dart';
 import '../push/push.dart';
@@ -65,9 +66,36 @@ class _TabsState extends ConsumerState<_Tabs> {
     ref.read(pushOpenProvider.notifier).handled();
   }
 
+  final _removals = <String>{};
+
+  /// Another parent removed me from [deviceId]: say so and drop it from my profile.
+  void _removed(String deviceId, String by) {
+    if (!_removals.add(deviceId)) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final d = ref.read(deviceProvider).value;
+      final child = d != null && d.id == deviceId ? '${d.name}\'s WatchPack' : 'a WatchPack';
+      final messenger = ScaffoldMessenger.of(context);
+      ref.read(linkActionsProvider).unlink(deviceId).catchError((_) {});
+      messenger.showSnackBar(SnackBar(
+        content: Text('$by removed you from $child. Ask for a new invite to see it again.'),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 8),
+      ));
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(pushOpenProvider, (_, t) { if (t != null) _open(t); });
+    for (final id in ref.watch(userProfileProvider).value?.deviceIds ?? const <String>[]) {
+      final by = ref.watch(removalProvider(id)).value;
+      if (by != null) {
+        _removed(id, by);
+      } else {
+        _removals.remove(id);             // linked again later: a new removal must show
+      }
+    }
     final index = ref.watch(tabProvider);
     final unread = ref.watch(unreadAlertsProvider);
     final setTab = ref.read(tabProvider.notifier).set;

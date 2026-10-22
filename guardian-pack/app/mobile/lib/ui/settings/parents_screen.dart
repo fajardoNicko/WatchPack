@@ -63,7 +63,13 @@ class ParentsScreen extends ConsumerWidget {
                         leading: Avatar(name: m.name, photo: m.photo, size: 40),
                         title: Text(m.name.isEmpty ? m.email : m.name, style: t.bodyMedium),
                         subtitle: Text(m.email, style: t.bodySmall),
-                        trailing: m.uid == me ? const _Chip('You') : null,
+                        trailing: m.uid == me
+                            ? const _Chip('You')
+                            : IconButton(
+                                tooltip: 'Remove',
+                                onPressed: () => _remove(context, ref, deviceId!, m, name),
+                                icon: Icon(Symbols.person_remove_rounded, color: context.wp.muted, size: 20),
+                              ),
                       ),
                     ),
                   ],
@@ -75,7 +81,7 @@ class ParentsScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: WpSpace.xs),
               child: Text('Every parent here sees the live location, history and alerts, and gets the same push notifications. '
-                  'Each parent can leave from Security & privacy on their own phone.', style: t.bodySmall),
+                  'Each parent can leave from Security & privacy on their own phone, or be removed here.', style: t.bodySmall),
             ),
             const SizedBox(height: WpSpace.xl),
             _InviteButton(onPressed: deviceId == null ? null : () => _invite(context, ref, deviceId, name)),
@@ -109,6 +115,29 @@ class ParentsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _remove(BuildContext context, WidgetRef ref, String deviceId, Member m, String child) async {
+    final who = m.name.isEmpty ? m.email : m.name;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text('Remove $who?'),
+        content: Text('$who stops seeing $child\'s location, history and alerts right away. '
+            'To come back they need a new invite, or the pairing code on the WatchPack\'s sticker.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+          FilledButton(style: FilledButton.styleFrom(backgroundColor: WpColors.red), onPressed: () => Navigator.pop(c, true), child: const Text('Remove')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await ref.read(linkActionsProvider).removeParent(deviceId, m);
+      if (context.mounted) showNote(context, '$who removed.');
+    } catch (e) {
+      if (context.mounted) showNote(context, 'Could not remove $who: $e');
+    }
   }
 
   Future<void> _invite(BuildContext context, WidgetRef ref, String deviceId, String name) async {
