@@ -22,15 +22,21 @@ service cloud.firestore {
       return get(/databases/$(db)/documents/users/$(request.auth.uid)).data;
     }
 
+    // Another parent removed me from this device (devices/{id}/removed/{uid}).
+    function removedPath(deviceId) {
+      return /databases/$(db)/documents/devices/$(deviceId)/removed/$(request.auth.uid);
+    }
+
     function linkedTo(deviceId) {
-      return signedIn() && (myProfile().deviceIds.hasAny([deviceId]));
+      return signedIn() && myProfile().deviceIds.hasAny([deviceId]) && !exists(removedPath(deviceId));
     }
 
     // linkedTo as if the current batch were already applied, so a parent can link,
     // list themselves and retire the invite in one atomic write.
     function linkedAfter(deviceId) {
       return signedIn()
-        && getAfter(/databases/$(db)/documents/users/$(request.auth.uid)).data.get('deviceIds', []).hasAny([deviceId]);
+        && getAfter(/databases/$(db)/documents/users/$(request.auth.uid)).data.get('deviceIds', []).hasAny([deviceId])
+        && !existsAfter(removedPath(deviceId));
     }
 
     // The device itself has no Firebase account. It proves who it is with its secret:
@@ -145,7 +151,23 @@ service cloud.firestore {
         allow read: if linkedTo(deviceId);
         allow create, update: if request.auth.uid == uid && linkedAfter(deviceId) && deviceId != 'wp-demo-ivy'
           && request.resource.data.keys().hasOnly(['name', 'email', 'photo', 'joinedAt']);
-        allow delete: if signedIn() && request.auth.uid == uid;
+        // My own entry, or another parent's as part of removing them.
+        allow delete: if signedIn() && (request.auth.uid == uid
+          || (linkedTo(deviceId) && existsAfter(/databases/$(db)/documents/devices/$(deviceId)/removed/$(uid))));
+      }
+      // A parent removed by another parent. Their profile still lists the device, so
+      // linkedTo checks this too. Their app reads it, says so, and unlinks.
+      match /removed/{uid} {
+        allow get: if signedIn() && request.auth.uid == uid;
+        allow create: if linkedTo(deviceId) && uid != request.auth.uid && deviceId != 'wp-demo-ivy'
+          && request.resource.data.keys().hasOnly(['by', 'byName', 'at'])
+          && request.resource.data.by == request.auth.uid;
+        // Lifted only when they link again with a code: the device goes back on their
+        // profile in this same batch (which linkAllowed only permits with a valid code).
+        allow delete: if signedIn() && request.auth.uid == uid
+          && !myProfile().get('deviceIds', []).hasAny([deviceId])
+          && getAfter(/databases/$(db)/documents/users/$(request.auth.uid)).data.get('deviceIds', []).hasAny([deviceId]);
+        allow list, update: if false;
       }
     }
   }
