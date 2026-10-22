@@ -72,6 +72,8 @@ static void service() {
         if (btnDown && firstPressAt && millis() - firstPressAt <= SOS_DOUBLE_MS) {
             firstPressAt = 0;                           // second press: SOS now
             sosRequested = true;
+            toneUntil = millis() + 250;                 // instant "got it" chirp, network or not
+            Serial.printf("\n[%4lu s] double press → SOS requested\n", millis() / 1000);
         } else if (btnDown) {
             firstPressAt = millis();
             if (buzzUntil) buzzUntil = 0;               // one press = "found it"
@@ -329,7 +331,6 @@ static void fireSos() {
     Serial.printf("\n[%4lu s] SOS!\n", millis() / 1000);
     sosSince = millis();
     sosStampPending = true;
-    toneUntil = millis() + 800;                         // "it's sent" confirmation beep
 
     String t = "SOS from WatchPack - ";
     t += CHILD_NAME;
@@ -342,10 +343,13 @@ static void fireSos() {
     } else {
         t += "No GPS fix yet.";
     }
+    bool anySent = false;
     for (const String& n : sosNumbers()) {              // SMS first: it works without internet
         const bool ok = sendSms(n.c_str(), t);
+        anySent = anySent || ok;
         Serial.printf("  sms %s %s\n", n.c_str(), ok ? "SENT" : "FAILED");
     }
+    if (anySent) toneUntil = millis() + 800;            // long beep = the texts went out
     postTelemetry();
 }
 
@@ -381,7 +385,7 @@ void setup() {
     at("ATE0");
     auto line = [](String s) { s.replace("\r", ""); s.replace("\n", " "); s.replace("OK", ""); s.trim(); return s; };
     Serial.printf("sim: %s\n", line(at("AT+CPIN?")).c_str());
-    for (int i = 0; i < 45 && !registered(); i++) {
+    for (int i = 0; i < 45 && !registered() && !sosRequested; i++) {     // an SOS doesn't wait
         if (i % 5 == 0) Serial.printf("  [%3lu s] %s | %s\n", millis() / 1000, line(at("AT+CEREG?")).c_str(), line(at("AT+CSQ")).c_str());
         wait(2000);
     }
@@ -443,8 +447,7 @@ void loop() {
         Serial.println("3 failures in a row — reconnecting data");
         failures = 0;
         if (!modemAnswers(3)) { modemPowerOn(); modemAnswers(60); at("ATE0"); }
-        for (int i = 0; i < 15 && !registered(); i++) wait(2000);
-        dataUp();
-        sslSetup();
+        for (int i = 0; i < 15 && !registered() && !sosRequested; i++) wait(2000);
+        if (!sosRequested) { dataUp(); sslSetup(); }    // else SOS first; data is retried later
     }
 }
