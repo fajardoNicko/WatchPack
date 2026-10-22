@@ -39,7 +39,7 @@ class Device {
   final String? photo;                    // child's photo, base64 data URI
   final String? cmdId;                    // real devices: their command mailbox, cmdbox/{cmdId}
   final bool gpsFix;                      // false = position is the last known one
-  final DateTime? sosAt;                  // when the SOS button was last held
+  final DateTime? sosAt;                  // when SOS was last fired (double press on the button)
   final int? csq;                         // modem signal quality 0–31 (99 = unknown); real devices only
   final int battery;
   final DateTime? lastSeen;

@@ -2,8 +2,9 @@
 //   every 30 s (10 s in SOS) → position, battery, signal to Firestore over LTE/HTTPS
 //   every 10 s               → reads its command mailbox: "Find device" → buzzer 15 s,
 //                              and the family contacts edited in the app
-//   SOS button held 2 s      → SMS to every contact first, then the app goes red (10 min)
-//   short press while buzzing → stops the buzzer
+//   SOS button pressed twice → SMS to every contact first, then the app goes red (10 min)
+//   (the 2nd press within 0.6 s of the 1st; fires on the 2nd press, no holding)
+//   one press while buzzing  → stops the buzzer
 // Talks to Firestore's REST API directly, no Cloud Functions. Each write carries
 // DEVICE_SECRET, which the security rules check — app/firestore.rules, provision.mjs.
 // IO0 works as a second SOS button. The SOS input is ignored until it has read idle once,
@@ -54,8 +55,10 @@ static std::vector<String> sosNumbers() {
 }
 
 // ---------- background work: GPS, button, buzzer (runs inside every wait) ----------
-bool sosWired = false, btnDown = false, sosFiredThisPress = false, sosRequested = false;
-uint32_t btnSince = 0, buzzUntil = 0, toneUntil = 0;
+// A level only counts once it has been steady for BUTTON_DEBOUNCE_MS, so contact bounce
+// can't pass for a double press. Holding the button, or a wire stuck open, never fires.
+bool sosWired = false, rawDown = false, btnDown = false, sosRequested = false;
+uint32_t rawSince = 0, firstPressAt = 0, buzzUntil = 0, toneUntil = 0;
 
 static void service() {
     while (SerialGPS.available()) gps.encode(SerialGPS.read());
@@ -63,15 +66,16 @@ static void service() {
     const bool sosPin = digitalRead(SOS_BUTTON_PIN) == SOS_PRESSED_LEVEL;
     if (!sosPin) sosWired = true;
     const bool down = (sosWired && sosPin) || digitalRead(BOOT_BUTTON_PIN) == LOW;
-    if (down && !btnDown) { btnDown = true; btnSince = millis(); }
-    if (!down && btnDown) {
-        btnDown = false;
-        if (!sosFiredThisPress && buzzUntil) buzzUntil = 0;     // short press = "found it"
-        sosFiredThisPress = false;
-    }
-    if (btnDown && !sosFiredThisPress && millis() - btnSince >= SOS_HOLD_MS) {
-        sosFiredThisPress = true;
-        sosRequested = true;
+    if (down != rawDown) { rawDown = down; rawSince = millis(); }
+    if (rawDown != btnDown && millis() - rawSince >= BUTTON_DEBOUNCE_MS) {
+        btnDown = rawDown;
+        if (btnDown && firstPressAt && millis() - firstPressAt <= SOS_DOUBLE_MS) {
+            firstPressAt = 0;                           // second press: SOS now
+            sosRequested = true;
+        } else if (btnDown) {
+            firstPressAt = millis();
+            if (buzzUntil) buzzUntil = 0;               // one press = "found it"
+        }
     }
 
     bool on = (int32_t)(toneUntil - millis()) > 0;
