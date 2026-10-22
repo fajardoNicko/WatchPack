@@ -1,5 +1,5 @@
 name: watchpack
-description: "A new Flutter project."
+description: "WatchPack — the parent app for the WatchPack backpack tracker."
 publish_to: 'none'
 version: 1.0.0+2
 
