@@ -72,9 +72,10 @@ async function evaluate(ref) {
         .sort((a, b) => (a.radiusM ?? 200) - (b.radiusM ?? 200))[0];
       if (current) {
         // Names are free text ("Home Zone", "Mia's house"), so don't append "zone" to them.
-        await raise(ref, d, "zone_exit", `${name} left ${current.name}`, `Left at ${clock()}.`);
+        // Each zone picks which crossings alert (notify: both | arrive | leave).
+        if (current.notify !== "arrive") await raise(ref, d, "zone_exit", `${name} left ${current.name}`, `Left at ${clock()}.`);
       }
-      if (entered) {
+      if (entered && entered.notify !== "leave") {
         await raise(ref, d, "zone_enter", `${name} arrived at ${entered.name}`, `Arrived at ${clock()}.`);
       }
       const next = entered?.id ?? null;
