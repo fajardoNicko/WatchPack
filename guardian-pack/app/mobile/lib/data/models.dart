@@ -120,6 +120,18 @@ enum ZoneType {
   final String label, defaultName, example;
 }
 
+/// Which crossings of a zone push an alert. Stored as `notify`; missing = both.
+enum ZoneNotify {
+  both('Both'),
+  arrive('Arrivals'),
+  leave('Departures');
+
+  const ZoneNotify(this.label);
+  final String label;
+
+  static ZoneNotify parse(Object? v) => values.firstWhere((n) => n.name == v, orElse: () => both);
+}
+
 class Zone {
   const Zone({
     required this.id,
@@ -128,12 +140,14 @@ class Zone {
     required this.center,
     required this.radiusM,
     required this.enabled,
+    this.notify = ZoneNotify.both,
   });
   final String id, name;
   final ZoneType type;
   final LatLng center;
   final double radiusM;
   final bool enabled;
+  final ZoneNotify notify;
 
   factory Zone.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
     final m = d.data()!;
@@ -144,6 +158,7 @@ class Zone {
       center: LatLng((m['lat'] as num).toDouble(), (m['lng'] as num).toDouble()),
       radiusM: (m['radiusM'] as num?)?.toDouble() ?? 200,
       enabled: m['enabled'] != false,
+      notify: ZoneNotify.parse(m['notify']),
     );
   }
 }

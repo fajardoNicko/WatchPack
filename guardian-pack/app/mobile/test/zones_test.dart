@@ -8,6 +8,13 @@ void main() {
     }
   });
 
+  test('alert choice per place, old zones alert both ways', () {
+    expect(ZoneNotify.parse(null), ZoneNotify.both);
+    expect(ZoneNotify.parse('arrive'), ZoneNotify.arrive);
+    expect(ZoneNotify.parse('leave'), ZoneNotify.leave);
+    expect(ZoneNotify.parse('nonsense'), ZoneNotify.both);
+  });
+
   test('every kind has a label, a default name and an example', () {
     for (final z in ZoneType.values) {
       expect(z.label, isNotEmpty);

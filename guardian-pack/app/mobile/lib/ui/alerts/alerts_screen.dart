@@ -251,7 +251,8 @@ class _ZoneCard extends StatelessWidget {
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(z.name, style: t.titleSmall),
-            Text('${z.type.label}  ·  ${z.radiusM.round()} m radius${deviceName != null ? '  ·  $deviceName' : ''}', style: t.bodySmall),
+            Text('${z.type.label}  ·  ${z.radiusM.round()} m${z.notify == ZoneNotify.both ? '' : '  ·  ${z.notify.label.toLowerCase()} only'}'
+                '${deviceName != null ? '  ·  $deviceName' : ''}', style: t.bodySmall),
           ]),
         ),
         Switch(value: z.enabled, onChanged: onToggle),

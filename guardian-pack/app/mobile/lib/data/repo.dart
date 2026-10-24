@@ -126,6 +126,7 @@ class DeviceActions {
     required LatLng center,
     required double radiusM,
     required bool enabled,
+    ZoneNotify notify = ZoneNotify.both,
   }) {
     final zones = _deviceRef(_id).collection('zones');
     final doc = id == null ? zones.doc() : zones.doc(id);
@@ -136,6 +137,7 @@ class DeviceActions {
       'lng': center.longitude,
       'radiusM': radiusM.round(),
       'enabled': enabled,
+      'notify': notify.name,
     });
   }
 

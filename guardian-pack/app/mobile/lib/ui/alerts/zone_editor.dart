@@ -29,6 +29,7 @@ class _ZoneEditorScreenState extends ConsumerState<ZoneEditorScreen> {
   late final _name = TextEditingController(text: widget.existing?.name ?? '');
   late ZoneType _type = widget.existing?.type ?? ZoneType.home;
   late double _radius = widget.existing?.radiusM ?? 200;
+  late ZoneNotify _notify = widget.existing?.notify ?? ZoneNotify.both;
   LatLng? _center;
   bool _saving = false;
   bool _nameTouched = false;
@@ -64,6 +65,7 @@ class _ZoneEditorScreenState extends ConsumerState<ZoneEditorScreen> {
             center: center,
             radiusM: _radius,
             enabled: widget.existing?.enabled ?? true,
+            notify: _notify,
           );
       if (mounted) {
         Navigator.of(context).pop();
@@ -199,6 +201,26 @@ class _ZoneEditorScreenState extends ConsumerState<ZoneEditorScreen> {
                       inactiveColor: wp.line,
                       onChanged: (v) => setState(() => _radius = v),
                     ),
+                    Text('Alert on', style: t.labelMedium),
+                    const SizedBox(height: WpSpace.xs),
+                    SizedBox(
+                      width: double.infinity,
+                      child: SegmentedButton<ZoneNotify>(
+                        segments: [for (final n in ZoneNotify.values) ButtonSegment(value: n, label: Text(n.label, maxLines: 1))],
+                        selected: {_notify},
+                        showSelectedIcon: false,
+                        onSelectionChanged: (s) => setState(() => _notify = s.first),
+                        style: SegmentedButton.styleFrom(
+                          selectedBackgroundColor: WpColors.navy,
+                          selectedForegroundColor: Colors.white,
+                          side: BorderSide(color: wp.line),
+                          visualDensity: VisualDensity.compact,
+                          textStyle: t.labelMedium,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(WpRadius.button)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: WpSpace.m),
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton(
