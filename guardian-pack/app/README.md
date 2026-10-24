@@ -76,8 +76,20 @@ itself, pushes stop; a new invite or the sticker code brings them back), **more 
 the maps, rename the child in Settings, marker glides between fixes, cheaper map recolouring.
 Tests: `flutter test` (18 unit tests) and `cd rules-test && npm install && npm test` (71 rules cases
 on the emulator; Java = Android Studio's JBR in `JAVA_HOME`).
-> **Deploy the rules before installing this build**: `firebase deploy --only firestore:rules`.
-> Linking now also clears `devices/{id}/removed/{me}`, which the old live rules refuse.
+Rules deployed and **1.1** installed on the phone 2026-10-24. Also in 1.1: each place alerts on
+arrivals, departures or both (zone `notify`, respected by the watcher).
+
+## Release builds
+`flutter build apk --release` signs with `android/key.properties` if it exists (git-ignored):
+```
+storeFile=watchpack-release.jks
+storePassword=…
+keyAlias=watchpack
+keyPassword=…
+```
+Make the key once with `keytool -genkey -v -keystore android/watchpack-release.jks -keyalg RSA
+-keysize 2048 -validity 10000 -alias watchpack` and keep a copy somewhere safe — updates must be
+signed with the same key. Without it, release builds use the debug key.
 
 ## Status (2026-10-18)
 Feature-complete for the demo. Added: pairing / invite codes, Parental account (parents list,
