@@ -2,6 +2,9 @@
 google-services.json
 **/google-services.json
 mobile/lib/firebase_options.dart
+# Release signing key and its passwords.
+mobile/android/key.properties
+mobile/android/*.jks
 mobile/.dart_tool/
 mobile/build/
 mobile/.idea/
