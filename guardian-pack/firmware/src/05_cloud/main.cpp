@@ -233,6 +233,7 @@ static int batteryPct() {
 // ---------- device state ----------
 uint32_t sosSince = 0;
 bool sosStampPending = false, clearDeviceBuzz = false, buzzWasOn = false;
+bool sosNeedsFix = false;               // the SOS text went out without a fresh position
 double lastLat = 0, lastLng = 0;
 uint32_t lastFixPost = 0, lastGoodFixAt = 0;
 int failures = 0;
@@ -341,8 +342,9 @@ static void fireSos() {
         t += "Last known location (" + String((millis() - lastGoodFixAt) / 60000) + " min ago): https://maps.google.com/?q=";
         t += String(gps.location.lat(), 5) + "," + String(gps.location.lng(), 5);
     } else {
-        t += "No GPS fix yet.";
+        t += "No GPS fix yet - the location follows in another text.";
     }
+    sosNeedsFix = !freshFix();
     bool anySent = false;
     for (const String& n : sosNumbers()) {              // SMS first: it works without internet
         const bool ok = sendSms(n.c_str(), t);
@@ -431,6 +433,15 @@ void loop() {
 
     if (sosRequested) { sosRequested = false; if (modemOk) fireSos(); }
     if (!modemOk) return;
+
+    // An SOS that went out without a position: text it as soon as GPS has one (SOS window only).
+    if (sosNeedsFix && !sosActive()) sosNeedsFix = false;
+    if (sosNeedsFix && freshFix()) {
+        sosNeedsFix = false;
+        String t = String("WatchPack - ") + CHILD_NAME + "'s location now (SOS): https://maps.google.com/?q=";
+        t += String(gps.location.lat(), 5) + "," + String(gps.location.lng(), 5);
+        for (const String& n : sosNumbers()) Serial.printf("  sms %s %s (location)\n", n.c_str(), sendSms(n.c_str(), t) ? "SENT" : "FAILED");
+    }
 
     if (buzzWasOn && !buzzUntil) { buzzWasOn = false; clearDeviceBuzz = true; lastPost = 0; }
 
