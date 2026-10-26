@@ -50,20 +50,27 @@ class Device {
   final String? insideZoneId;
   final List<Contact> contacts;
 
+  /// What the app shows. An SOS stays up even if the device goes quiet (that may be
+  /// the emergency) until a parent marks it safe; a newer press shows it again.
+  /// Anything else not heard from in 15 min is offline.
+  static DeviceStatus effectiveStatus(Object? stored, {DateTime? seen, DateTime? sosAt, DateTime? sosClearedAt, DateTime? now}) {
+    var status = DeviceStatus.values.firstWhere((s) => s.name == stored, orElse: () => DeviceStatus.idle);
+    if (status == DeviceStatus.sos && sosClearedAt != null && (sosAt == null || !sosAt.isAfter(sosClearedAt))) {
+      status = DeviceStatus.idle;
+    }
+    if (status != DeviceStatus.sos && (seen == null || (now ?? DateTime.now()).difference(seen) > const Duration(minutes: 15))) {
+      status = DeviceStatus.offline;
+    }
+    return status;
+  }
+
   factory Device.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
     final m = d.data() ?? const {};
     final lat = (m['lastLat'] as num?)?.toDouble();
     final lng = (m['lastLng'] as num?)?.toDouble();
     final seen = (m['lastSeen'] as Timestamp?)?.toDate();
-    var status = DeviceStatus.values.firstWhere(
-      (s) => s.name == m['status'],
-      orElse: () => DeviceStatus.idle,
-    );
-    // Not heard from in 15 min → offline, whatever the stored status says.
-    if (status != DeviceStatus.sos &&
-        (seen == null || DateTime.now().difference(seen) > const Duration(minutes: 15))) {
-      status = DeviceStatus.offline;
-    }
+    final sosAt = (m['sosAt'] as Timestamp?)?.toDate();
+    final status = effectiveStatus(m['status'], seen: seen, sosAt: sosAt, sosClearedAt: (m['sosClearedAt'] as Timestamp?)?.toDate());
     return Device(
       id: d.id,
       name: (m['name'] as String?) ?? 'Device',
@@ -77,7 +84,7 @@ class Device {
       photo: m['photo'] as String?,
       cmdId: m['cmdId'] as String?,
       gpsFix: m['gpsFix'] != false,
-      sosAt: (m['sosAt'] as Timestamp?)?.toDate(),
+      sosAt: sosAt,
       csq: (m['csq'] as num?)?.toInt(),
       contacts: [
         for (final c in (m['contacts'] as List?) ?? const [])

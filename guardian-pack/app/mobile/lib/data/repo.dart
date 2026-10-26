@@ -154,6 +154,10 @@ class DeviceActions {
     return batch.commit();
   }
 
+  /// A parent has dealt with the SOS: the red card clears for every parent until the
+  /// next press. Server time, so a wrong phone clock can't hide a later SOS (rules check it).
+  Future<void> markSafe() => _deviceRef(_id).update({'sosClearedAt': FieldValue.serverTimestamp()});
+
   /// The child's name, shown on the map and in alert texts.
   Future<void> rename(String name) => _deviceRef(_id).update({'name': name});
 

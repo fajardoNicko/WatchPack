@@ -253,6 +253,14 @@ class _StatusCard extends ConsumerWidget {
                         _Action(icon: Symbols.share_rounded, label: 'Share', onTap: d.position == null ? null : () => _share(d)),
                       ],
               ),
+              if (sos)
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () => _markSafe(context, ref, d),
+                    icon: const Icon(Symbols.verified_user_rounded, size: 18),
+                    label: Text('Mark ${d.name} as safe'),
+                  ),
+                ),
             ],
           );
         },
@@ -273,6 +281,26 @@ class _StatusCard extends ConsumerWidget {
   static Future<void> _open(BuildContext context, Uri uri) async {
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && context.mounted) {
       showNote(context, 'No app on this phone can open that.');
+    }
+  }
+
+  Future<void> _markSafe(BuildContext context, WidgetRef ref, Device d) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text('Mark ${d.name} as safe?'),
+        content: Text('The SOS card clears for every parent. If ${d.name} presses SOS again, it comes back.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Mark as safe')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await ref.read(deviceActionsProvider).markSafe();
+    } catch (e) {
+      if (context.mounted) showNote(context, 'Could not clear the SOS: $e');
     }
   }
 
