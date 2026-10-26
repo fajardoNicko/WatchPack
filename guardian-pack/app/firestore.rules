@@ -120,8 +120,11 @@ service cloud.firestore {
       allow read: if linkedTo(deviceId);
       // Parents may change settings-type fields, never the telemetry the device writes.
       // The device may change only telemetry, with a fresh auth.
+      // sosClearedAt ("Mark as safe") must be the server's time, so it can't be set
+      // ahead to hide an SOS that hasn't happened yet.
       allow update: if (linkedTo(deviceId)
-          && changed().hasOnly(['name', 'buzz', 'contacts', 'school', 'photo']))
+          && changed().hasOnly(['name', 'buzz', 'contacts', 'school', 'photo', 'sosClearedAt'])
+          && (!changed().hasAny(['sosClearedAt']) || request.resource.data.sosClearedAt == request.time))
         || (changed().hasOnly(['lastLat', 'lastLng', 'lastSeen', 'battery', 'speedKmh', 'status',
                                'buzz', 'gpsFix', 'csq', 'sosAt', 'fw', 'auth'])
           && changed().hasAll(['auth'])

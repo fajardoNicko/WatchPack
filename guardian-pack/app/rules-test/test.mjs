@@ -116,6 +116,9 @@ await t("cmdbox contacts as a list", assertFails(updateDoc(doc(alice, "cmdbox/SE
 await t("cmdbox other field", assertFails(updateDoc(doc(alice, "cmdbox/SECRET"), { deviceId: "wp-002" })));
 await t("device clears buzz", assertSucceeds(updateDoc(doc(anon, "cmdbox/SECRET"), { buzz: false })));
 await t("parent renames device", assertSucceeds(updateDoc(doc(alice, "devices/wp-001"), { name: "Ivy B" })));
+await t("parent marks the SOS safe", assertSucceeds(updateDoc(doc(alice, "devices/wp-001"), { sosClearedAt: serverTimestamp() })));
+await t("mark safe ahead of time", assertFails(updateDoc(doc(alice, "devices/wp-001"), { sosClearedAt: hours(48) })));
+await t("unlinked marks safe", assertFails(updateDoc(doc(carol, "devices/wp-001"), { sosClearedAt: serverTimestamp() })));
 await t("delete own profile", assertSucceeds(deleteDoc(doc(alice, "users/alice"))));
 
 // --- removing another parent ---
