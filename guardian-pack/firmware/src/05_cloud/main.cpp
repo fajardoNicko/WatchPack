@@ -280,8 +280,11 @@ static bool postTelemetry() {
 
     const uint32_t t0 = millis();
     const int st = http(1, String(BASE) + ":commit", w);
-    Serial.printf("[%4lu s] post %d in %lu ms | %s | fix %s %.5f,%.5f | %d km/h | bat %d%% | csq %d%s\n",
-                  millis() / 1000, st, millis() - t0, status, fix ? "yes" : "no", lat, lng, (int)spd, bat, csq,
+    // "sats" = satellites in the fix, "nmea" = good GPS sentences so far: nmea stuck at 0
+    // means the GPS isn't talking; nmea climbing with sats 0 means it's still searching.
+    Serial.printf("[%4lu s] post %d in %lu ms | %s | fix %s %.5f,%.5f | sats %lu nmea %lu | %d km/h | bat %d%% | csq %d%s\n",
+                  millis() / 1000, st, millis() - t0, status, fix ? "yes" : "no", lat, lng,
+                  (unsigned long)gps.satellites.value(), (unsigned long)gps.passedChecksum(), (int)spd, bat, csq,
                   newPoint ? " | +trail" : "");
     if (st != 200) return false;
     if (newPoint) { lastFixPost = millis(); lastLat = lat; lastLng = lng; }
