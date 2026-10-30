@@ -14,6 +14,7 @@ import '../../data/trips.dart';
 import '../../theme/tokens.dart';
 import '../../util/format.dart';
 import '../widgets.dart';
+import 'gliding_marker.dart';
 import 'map_layers.dart';
 import 'quake_layer.dart';
 
@@ -85,16 +86,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               zonePins(zones.value ?? const []),
               quakeLayer(context, quakes.value ?? const []),
               if (pos != null)
-                // Glides from the last fix to the new one instead of jumping. Keyed by
-                // device so switching children doesn't slide across the city.
-                TweenAnimationBuilder<LatLng>(
+                // Keyed by device so switching children doesn't slide across the city.
+                GlidingMarker(
                   key: ValueKey(device.value?.id),
-                  tween: _LatLngTween(end: pos),
-                  duration: const Duration(milliseconds: 900),
-                  curve: Curves.easeInOut,
-                  builder: (_, p, marker) => MarkerLayer(markers: [
-                    Marker(point: p, width: LiveMarker.width, height: LiveMarker.height, alignment: LiveMarker.alignment, child: marker!),
-                  ]),
+                  device: device.value!,
+                  trail: [for (final f in fixes.value ?? const <Fix>[]) f.point],
                   child: LiveMarker(
                     name: device.value?.name ?? '',
                     photo: device.value?.photo,
@@ -118,15 +114,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ),
     );
   }
-}
-
-class _LatLngTween extends Tween<LatLng> {
-  _LatLngTween({super.end});
-  @override
-  LatLng lerp(double t) => LatLng(
-        begin!.latitude + (end!.latitude - begin!.latitude) * t,
-        begin!.longitude + (end!.longitude - begin!.longitude) * t,
-      );
 }
 
 class _StatusCard extends ConsumerWidget {
