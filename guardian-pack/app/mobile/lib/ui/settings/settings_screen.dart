@@ -115,7 +115,7 @@ class SettingsScreen extends ConsumerWidget {
             ]),
           ),
           const SizedBox(height: WpSpace.xl),
-          Center(child: Text('WatchPack 1.1  ·  device ${device?.id ?? '—'}', style: t.labelSmall)),
+          Center(child: Text('WatchPack 1.2  ·  device ${device?.id ?? '—'}', style: t.labelSmall)),
         ],
       ),
     );
