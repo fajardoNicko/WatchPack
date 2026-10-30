@@ -54,7 +54,7 @@ class SettingsScreen extends ConsumerWidget {
           Row(children: [
             Expanded(
               child: _BigCard(
-                icon: Symbols.phone_android_rounded,
+                icon: Symbols.phone_android,
                 title: 'Device linking',
                 body: device == null ? 'Link a physical WatchPack device' : 'Showing ${device.name} (${device.id})',
                 action: (profile?.deviceIds.length ?? 0) > 1 ? 'Switch' : 'Link another',
@@ -64,7 +64,7 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(width: WpSpace.m),
             Expanded(
               child: _BigCard(
-                icon: Symbols.groups_rounded,
+                icon: Symbols.groups,
                 title: 'Parental account',
                 body: parents > 1 ? '$parents parents can see ${device?.name ?? 'this device'}' : 'Add another parent for shared monitoring',
                 action: parents > 1 ? 'Manage' : 'Add parent',
@@ -80,7 +80,7 @@ class SettingsScreen extends ConsumerWidget {
                 leading: Avatar(name: device.name, photo: device.photo, size: 44, onTap: () => _childPhoto(context, ref, device)),
                 title: Text(device.name, style: t.bodyMedium),
                 subtitle: Text('WatchPack ${device.id}', style: t.bodySmall),
-                trailing: Icon(Symbols.edit_rounded, size: 18, color: context.wp.muted),
+                trailing: Icon(Symbols.edit, size: 18, color: context.wp.muted),
                 onTap: () => _editChildName(context, ref, device),
               ),
             ),
@@ -98,20 +98,20 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 title: Text(profile?.displayName.isNotEmpty == true ? profile!.displayName : 'Parent', style: t.bodyMedium),
                 subtitle: Text(profile?.email ?? '', style: t.bodySmall),
-                trailing: Icon(Symbols.edit_rounded, size: 18, color: context.wp.muted),
+                trailing: Icon(Symbols.edit, size: 18, color: context.wp.muted),
                 onTap: profile == null ? null : () => _editName(context, ref, profile),
               ),
               Divider(color: context.wp.line),
-              _Row(icon: Symbols.lock_rounded, title: 'Security & privacy', onTap: () => SecurityScreen.open(context)),
+              _Row(icon: Symbols.lock, title: 'Security & privacy', onTap: () => SecurityScreen.open(context)),
               Divider(color: context.wp.line),
               _Row(
-                icon: Symbols.palette_rounded,
+                icon: Symbols.palette,
                 title: 'Appearance',
                 trailing: Text(switch (mode) { ThemeMode.system => 'System', ThemeMode.light => 'Light', ThemeMode.dark => 'Dark' }, style: t.bodySmall),
                 onTap: () => _pickTheme(context, ref, mode),
               ),
               Divider(color: context.wp.line),
-              _Row(icon: Symbols.logout_rounded, title: 'Sign out', onTap: () => _confirmSignOut(context, ref)),
+              _Row(icon: Symbols.logout, title: 'Sign out', onTap: () => _confirmSignOut(context, ref)),
             ]),
           ),
           const SizedBox(height: WpSpace.xl),
@@ -257,7 +257,7 @@ class SettingsScreen extends ConsumerWidget {
           for (final (mode, label) in const [(ThemeMode.system, 'Match system'), (ThemeMode.light, 'Light'), (ThemeMode.dark, 'Dark')])
             ListTile(
               title: Text(label),
-              trailing: mode == current ? Icon(Symbols.check_rounded, color: c.wp.accent, size: 20) : null,
+              trailing: mode == current ? Icon(Symbols.check, color: c.wp.accent, size: 20) : null,
               onTap: () => Navigator.pop(c, mode),
             ),
           const SizedBox(height: WpSpace.s),
@@ -303,7 +303,7 @@ class _AddContact extends StatelessWidget {
               width: 60,
               height: 60,
               decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: context.wp.line, width: 1.5)),
-              child: Icon(Symbols.add_rounded, color: context.wp.muted),
+              child: Icon(Symbols.add, color: context.wp.muted),
             ),
             const SizedBox(height: WpSpace.xs),
             Text('Add', style: context.text.labelMedium),
@@ -345,7 +345,7 @@ class _Row extends StatelessWidget {
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           ?trailing,
           const SizedBox(width: WpSpace.s),
-          Icon(Symbols.chevron_right_rounded, size: 18, color: context.wp.muted),
+          Icon(Symbols.chevron_right, size: 18, color: context.wp.muted),
         ]),
         onTap: onTap,
       );

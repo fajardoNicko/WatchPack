@@ -32,15 +32,15 @@ class SecurityScreen extends ConsumerWidget {
             padding: EdgeInsets.zero,
             child: Column(children: [
               ListTile(
-                leading: const Icon(Symbols.mail_rounded),
+                leading: const Icon(Symbols.mail),
                 title: Text(profile?.email ?? '', style: t.bodyMedium),
                 subtitle: Text('Email and password', style: t.bodySmall),
               ),
               Divider(color: context.wp.line),
               ListTile(
-                leading: const Icon(Symbols.password_rounded),
+                leading: const Icon(Symbols.password),
                 title: Text('Change password', style: t.bodyMedium),
-                trailing: Icon(Symbols.chevron_right_rounded, size: 18, color: context.wp.muted),
+                trailing: Icon(Symbols.chevron_right, size: 18, color: context.wp.muted),
                 onTap: () => _changePassword(context, ref),
               ),
             ]),
@@ -50,7 +50,7 @@ class SecurityScreen extends ConsumerWidget {
             WpCard(
               padding: EdgeInsets.zero,
               child: ListTile(
-                leading: const Icon(Symbols.link_off_rounded, color: WpColors.red),
+                leading: const Icon(Symbols.link_off, color: WpColors.red),
                 title: Text('Unlink from my account', style: t.bodyMedium!.copyWith(color: WpColors.red)),
                 subtitle: Text('You stop seeing ${device?.name ?? 'this device'}. Other parents keep access.', style: t.bodySmall),
                 onTap: () => _unlink(context, ref, deviceId, device?.name ?? deviceId),
@@ -61,11 +61,11 @@ class SecurityScreen extends ConsumerWidget {
           WpCard(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               for (final (icon, text) in const [
-                (Symbols.location_on_rounded, 'Location every 30 seconds while the WatchPack is on (every 10 s during SOS), with speed and battery. This is the trail in Trip History.'),
-                (Symbols.group_rounded, 'Only parents linked with a pairing or invite code can see a device. Nobody can link with the device ID alone.'),
-                (Symbols.key_rounded, 'The WatchPack signs every update with its own secret key, so nothing else can pretend to be it.'),
-                (Symbols.sms_rounded, 'SOS texts go straight from the WatchPack\'s SIM to your family contacts — they work without the app or internet.'),
-                (Symbols.photo_camera_rounded, 'Photos stay small (256 px) and are stored with your account, not shared outside the family.'),
+                (Symbols.location_on, 'Location every 30 seconds while the WatchPack is on (every 10 s during SOS), with speed and battery. This is the trail in Trip History.'),
+                (Symbols.group, 'Only parents linked with a pairing or invite code can see a device. Nobody can link with the device ID alone.'),
+                (Symbols.key, 'The WatchPack signs every update with its own secret key, so nothing else can pretend to be it.'),
+                (Symbols.sms, 'SOS texts go straight from the WatchPack\'s SIM to your family contacts — they work without the app or internet.'),
+                (Symbols.photo_camera, 'Photos stay small (256 px) and are stored with your account, not shared outside the family.'),
               ]) ...[
                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Icon(icon, size: 18, color: WpColors.cyan),
@@ -80,7 +80,7 @@ class SecurityScreen extends ConsumerWidget {
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(foregroundColor: WpColors.red, side: const BorderSide(color: WpColors.red)),
             onPressed: () => _deleteAccount(context, ref),
-            icon: const Icon(Symbols.delete_forever_rounded),
+            icon: const Icon(Symbols.delete_forever),
             label: const Text('Delete my account'),
           ),
         ],

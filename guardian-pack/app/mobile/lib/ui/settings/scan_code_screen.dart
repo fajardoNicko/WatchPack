@@ -52,7 +52,7 @@ class _ScanCodeScreenState extends State<ScanCodeScreen> {
           trailing: IconButton(
             tooltip: 'Torch',
             onPressed: _camera.toggleTorch,
-            icon: const Icon(Symbols.flashlight_on_rounded, color: Colors.white),
+            icon: const Icon(Symbols.flashlight_on, color: Colors.white),
           ),
         ),
         body: Stack(fit: StackFit.expand, children: [

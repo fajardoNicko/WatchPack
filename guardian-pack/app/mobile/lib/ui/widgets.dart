@@ -146,29 +146,29 @@ class StatusDot extends StatelessWidget {
 }
 
 IconData zoneIcon(ZoneType t) => switch (t) {
-      ZoneType.home => Symbols.home_rounded,
-      ZoneType.school => Symbols.school_rounded,
-      ZoneType.friend => Symbols.diversity_3_rounded,
-      ZoneType.family => Symbols.family_restroom_rounded,
-      ZoneType.tutor => Symbols.menu_book_rounded,
-      ZoneType.sports => Symbols.sports_soccer_rounded,
-      ZoneType.church => Symbols.church_rounded,
-      ZoneType.park => Symbols.park_rounded,
-      ZoneType.terminal => Symbols.directions_bus_rounded,
-      ZoneType.other => Symbols.location_on_rounded,
+      ZoneType.home => Symbols.home,
+      ZoneType.school => Symbols.school,
+      ZoneType.friend => Symbols.diversity_3,
+      ZoneType.family => Symbols.family_restroom,
+      ZoneType.tutor => Symbols.menu_book,
+      ZoneType.sports => Symbols.sports_soccer,
+      ZoneType.church => Symbols.church,
+      ZoneType.park => Symbols.park,
+      ZoneType.terminal => Symbols.directions_bus,
+      ZoneType.other => Symbols.location_on,
     };
 
 IconData alertIcon(AlertType t) => switch (t) {
-      AlertType.sos => Symbols.sos_rounded,
-      AlertType.zoneEnter => Symbols.login_rounded,
-      AlertType.zoneExit => Symbols.logout_rounded,
-      AlertType.offRoute => Symbols.warning_rounded,
-      AlertType.onRoute => Symbols.check_circle_rounded,
-      AlertType.lowBattery => Symbols.battery_1_bar_rounded,
-      AlertType.signalLoss => Symbols.signal_cellular_off_rounded,
-      AlertType.weather => Symbols.rainy_rounded,
-      AlertType.quake => Symbols.earthquake_rounded,
-      AlertType.other => Symbols.notifications_rounded,
+      AlertType.sos => Symbols.sos,
+      AlertType.zoneEnter => Symbols.login,
+      AlertType.zoneExit => Symbols.logout,
+      AlertType.offRoute => Symbols.warning,
+      AlertType.onRoute => Symbols.check_circle,
+      AlertType.lowBattery => Symbols.battery_1_bar,
+      AlertType.signalLoss => Symbols.signal_cellular_off,
+      AlertType.weather => Symbols.rainy,
+      AlertType.quake => Symbols.earthquake,
+      AlertType.other => Symbols.notifications,
     };
 
 Color alertColor(BuildContext context, AlertType t) => switch (t) {
@@ -274,7 +274,7 @@ class Avatar extends StatelessWidget {
             width: size * 0.36,
             height: size * 0.36,
             decoration: BoxDecoration(color: context.wp.accent, shape: BoxShape.circle, border: Border.all(color: context.wp.card, width: 2)),
-            child: Icon(Symbols.photo_camera_rounded, size: size * 0.18, color: context.wp.onAccent, fill: 1),
+            child: Icon(Symbols.photo_camera, size: size * 0.18, color: context.wp.onAccent, weight: 500),
           ),
         ),
       ]),
@@ -290,10 +290,10 @@ Future<String?> pickAvatarSheet(BuildContext context, {bool hasPhoto = false}) a
     showDragHandle: true,
     builder: (c) => SafeArea(
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        ListTile(leading: const Icon(Symbols.photo_library_rounded), title: const Text('Choose from gallery'), onTap: () => Navigator.pop(c, 'gallery')),
-        ListTile(leading: const Icon(Symbols.photo_camera_rounded), title: const Text('Take a photo'), onTap: () => Navigator.pop(c, 'camera')),
+        ListTile(leading: const Icon(Symbols.photo_library), title: const Text('Choose from gallery'), onTap: () => Navigator.pop(c, 'gallery')),
+        ListTile(leading: const Icon(Symbols.photo_camera), title: const Text('Take a photo'), onTap: () => Navigator.pop(c, 'camera')),
         if (hasPhoto)
-          ListTile(leading: const Icon(Symbols.delete_rounded, color: WpColors.red), title: const Text('Remove photo', style: TextStyle(color: WpColors.red)), onTap: () => Navigator.pop(c, 'remove')),
+          ListTile(leading: const Icon(Symbols.delete, color: WpColors.red), title: const Text('Remove photo', style: TextStyle(color: WpColors.red)), onTap: () => Navigator.pop(c, 'remove')),
         const SizedBox(height: WpSpace.s),
       ]),
     ),

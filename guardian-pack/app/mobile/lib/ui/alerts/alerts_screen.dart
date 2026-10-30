@@ -30,11 +30,11 @@ class AlertsScreen extends ConsumerWidget {
               width: double.infinity,
               child: SegmentedButton<int>(
                 segments: [
-                  const ButtonSegment(value: 0, label: Text('Zones & triggers'), icon: Icon(Symbols.verified_user_rounded, size: 18)),
+                  const ButtonSegment(value: 0, label: Text('Zones & triggers'), icon: Icon(Symbols.verified_user, size: 18)),
                   ButtonSegment(
                     value: 1,
                     label: Text(unread > 0 && tab != 1 ? 'Alert feed ($unread)' : 'Alert feed'),
-                    icon: const Icon(Symbols.notifications_rounded, size: 18),
+                    icon: const Icon(Symbols.notifications, size: 18),
                   ),
                 ],
                 selected: {tab},
@@ -72,7 +72,7 @@ class _ZonesTab extends ConsumerWidget {
       children: [
         FilledButton.icon(
           onPressed: () => ZoneEditorScreen.open(context),
-          icon: const Icon(Symbols.add_circle_rounded),
+          icon: const Icon(Symbols.add_circle),
           label: const Text('Create new safety zone'),
         ),
         const SectionTitle('Safety zones'),
@@ -80,7 +80,7 @@ class _ZonesTab extends ConsumerWidget {
           loading: () => const Column(children: [Skeleton(height: 72), SizedBox(height: WpSpace.m), Skeleton(height: 72)]),
           error: (e, _) => Text('$e', style: t.bodySmall),
           data: (list) => list.isEmpty
-              ? const EmptyState(icon: Symbols.map_rounded, title: 'No zones yet', body: 'Register home, school, a friend\'s or relative\'s house, the tutor… to get arrival and departure alerts.')
+              ? const EmptyState(icon: Symbols.map, title: 'No zones yet', body: 'Register home, school, a friend\'s or relative\'s house, the tutor… to get arrival and departure alerts.')
               : Column(children: [
                   for (final z in list) ...[
                     _ZoneCard(
@@ -103,7 +103,7 @@ class _ZonesTab extends ConsumerWidget {
             padding: EdgeInsets.zero,
             child: Column(children: [
               _TriggerRow(
-                icon: Symbols.battery_1_bar_rounded,
+                icon: Symbols.battery_1_bar,
                 color: WpColors.amber,
                 title: 'Low battery alert',
                 detail: 'Trigger: ${tr.lowBatteryPct}%  ·  tap to change',
@@ -120,7 +120,7 @@ class _ZonesTab extends ConsumerWidget {
               ),
               Divider(color: context.wp.line),
               _TriggerRow(
-                icon: Symbols.signal_cellular_off_rounded,
+                icon: Symbols.signal_cellular_off,
                 color: WpColors.amber,
                 title: 'Signal loss notification',
                 detail: 'Trigger: offline for ${tr.signalLossMin} min  ·  tap to change',
@@ -137,7 +137,7 @@ class _ZonesTab extends ConsumerWidget {
               ),
               Divider(color: context.wp.line),
               _TriggerRow(
-                icon: Symbols.warning_rounded,
+                icon: Symbols.warning,
                 color: WpColors.red,
                 title: 'Off-route alert',
                 detail: 'Far from everywhere ${device?.name ?? 'your child'} usually goes. Learns over 3 days.',
@@ -146,7 +146,7 @@ class _ZonesTab extends ConsumerWidget {
               ),
               Divider(color: context.wp.line),
               _TriggerRow(
-                icon: Symbols.thunderstorm_rounded,
+                icon: Symbols.thunderstorm,
                 color: WpColors.amber,
                 title: 'Severe weather',
                 detail: 'Thunderstorm, heavy rain or strong wind where ${device?.name ?? 'your child'} is',
@@ -155,7 +155,7 @@ class _ZonesTab extends ConsumerWidget {
               ),
               Divider(color: context.wp.line),
               const _TriggerRow(
-                icon: Symbols.earthquake_rounded,
+                icon: Symbols.earthquake,
                 color: WpColors.red,
                 title: 'Earthquakes',
                 detail: 'Always on — PHIVOLCS quakes M4 and up nearby',
@@ -164,7 +164,7 @@ class _ZonesTab extends ConsumerWidget {
               ),
               Divider(color: context.wp.line),
               const _TriggerRow(
-                icon: Symbols.sos_rounded,
+                icon: Symbols.sos,
                 color: WpColors.red,
                 title: 'SOS button',
                 detail: 'Always on — texts every family contact',
@@ -213,7 +213,7 @@ class _ZonesTab extends ConsumerWidget {
           for (final o in options)
             ListTile(
               title: Text(label(o)),
-              trailing: o == current ? const Icon(Symbols.check_rounded, color: WpColors.cyan, size: 20) : null,
+              trailing: o == current ? const Icon(Symbols.check, color: WpColors.cyan, size: 20) : null,
               onTap: () => Navigator.pop(c, o),
             ),
           const SizedBox(height: WpSpace.s),
@@ -250,12 +250,12 @@ class _ZoneCard extends StatelessWidget {
         IconButton(
           tooltip: 'Edit',
           onPressed: onEdit,
-          icon: Icon(Symbols.edit_rounded, color: context.wp.muted, size: 20),
+          icon: Icon(Symbols.edit, color: context.wp.muted, size: 20),
         ),
         IconButton(
           tooltip: 'Delete',
           onPressed: onDelete,
-          icon: Icon(Symbols.delete_rounded, color: context.wp.muted, size: 20),
+          icon: Icon(Symbols.delete, color: context.wp.muted, size: 20),
         ),
       ]),
     );
@@ -309,7 +309,7 @@ class _FeedTab extends ConsumerWidget {
       loading: () => const Padding(padding: EdgeInsets.all(WpSpace.l), child: Column(children: [Skeleton(height: 72), SizedBox(height: WpSpace.m), Skeleton(height: 72)])),
       error: (e, _) => Center(child: Text('$e', style: t.bodySmall)),
       data: (list) => list.isEmpty
-          ? const EmptyState(icon: Symbols.notifications_off_rounded, title: 'All quiet', body: 'Zone, route, battery and SOS alerts will show up here.')
+          ? const EmptyState(icon: Symbols.notifications_off, title: 'All quiet', body: 'Zone, route, battery and SOS alerts will show up here.')
           : ListView.separated(
               padding: const EdgeInsets.all(WpSpace.l),
               itemCount: list.length,

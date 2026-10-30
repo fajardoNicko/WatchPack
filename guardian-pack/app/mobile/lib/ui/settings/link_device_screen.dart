@@ -32,7 +32,7 @@ class LinkDeviceScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const IconDisc(Symbols.phone_android_rounded, size: 72),
+              const IconDisc(Symbols.phone_android, size: 72),
               const SizedBox(height: WpSpace.l),
               Text('Link your child\'s WatchPack', style: t.titleLarge, textAlign: TextAlign.center),
               const SizedBox(height: WpSpace.s),
@@ -44,13 +44,13 @@ class LinkDeviceScreen extends ConsumerWidget {
                   final code = await ScanCodeScreen.open(context);
                   if (code != null && context.mounted) await _link(context, ref, code);
                 },
-                icon: const Icon(Symbols.qr_code_scanner_rounded),
+                icon: const Icon(Symbols.qr_code_scanner),
                 label: const Text('Scan QR code'),
               ),
               const SizedBox(height: WpSpace.s),
               OutlinedButton.icon(
                 onPressed: () => showLinkDeviceDialog(context, ref),
-                icon: const Icon(Symbols.keyboard_rounded),
+                icon: const Icon(Symbols.keyboard),
                 label: const Text('Type a code'),
               ),
               const SizedBox(height: WpSpace.s),
@@ -140,7 +140,7 @@ class _CodeDialogState extends State<_CodeDialog> {
               labelText: 'Pairing or invite code',
               hintText: 'XXXX-XXXX',
               errorText: _error,
-              suffixIcon: IconButton(tooltip: 'Scan QR code', onPressed: _scan, icon: const Icon(Symbols.qr_code_scanner_rounded)),
+              suffixIcon: IconButton(tooltip: 'Scan QR code', onPressed: _scan, icon: const Icon(Symbols.qr_code_scanner)),
             ),
             onChanged: (_) { if (_error != null) setState(() => _error = null); },
             onSubmitted: (_) => _submit(),
@@ -167,17 +167,17 @@ Future<void> showDevicePicker(BuildContext context, WidgetRef ref) async {
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         for (final id in ids)
           ListTile(
-            leading: const Icon(Symbols.phone_android_rounded),
+            leading: const Icon(Symbols.phone_android),
             title: FutureBuilder(
               future: FirebaseFirestore.instance.collection('devices').doc(id).get(),
               builder: (_, s) => Text((s.data?.data()?['name'] as String?) ?? id),
             ),
             subtitle: Text(id == demoDeviceId ? '$id  ·  demo' : id),
-            trailing: id == current ? const Icon(Symbols.check_rounded, color: WpColors.cyan) : null,
+            trailing: id == current ? const Icon(Symbols.check, color: WpColors.cyan) : null,
             onTap: () => Navigator.pop(c, id),
           ),
         ListTile(
-          leading: const Icon(Symbols.link_rounded),
+          leading: const Icon(Symbols.link),
           title: const Text('Link another device'),
           onTap: () => Navigator.pop(c, '+link'),
         ),

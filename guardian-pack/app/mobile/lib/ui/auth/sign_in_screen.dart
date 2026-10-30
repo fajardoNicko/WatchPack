@@ -98,7 +98,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                 controller: _name,
                                 textCapitalization: TextCapitalization.words,
                                 autofillHints: const [AutofillHints.name],
-                                decoration: _dec('Your name', Symbols.person_rounded),
+                                decoration: _dec('Your name', Symbols.person),
                                 validator: (v) => (v ?? '').trim().length < 2 ? 'Enter your name' : null,
                               ),
                               const SizedBox(height: WpSpace.m),
@@ -107,7 +107,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               controller: _email,
                               keyboardType: TextInputType.emailAddress,
                               autofillHints: const [AutofillHints.email],
-                              decoration: _dec('Email', Symbols.mail_rounded),
+                              decoration: _dec('Email', Symbols.mail),
                               validator: (v) => !(v ?? '').contains('@') ? 'Enter a valid email' : null,
                             ),
                             const SizedBox(height: WpSpace.m),
@@ -116,10 +116,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               obscureText: !_showPassword,
                               autofillHints: [create ? AutofillHints.newPassword : AutofillHints.password],
                               onFieldSubmitted: (_) => _submit(),
-                              decoration: _dec('Password', Symbols.lock_rounded).copyWith(
+                              decoration: _dec('Password', Symbols.lock).copyWith(
                                 suffixIcon: IconButton(
                                   onPressed: () => setState(() => _showPassword = !_showPassword),
-                                  icon: Icon(_showPassword ? Symbols.visibility_off_rounded : Symbols.visibility_rounded),
+                                  icon: Icon(_showPassword ? Symbols.visibility_off : Symbols.visibility),
                                 ),
                               ),
                               validator: (v) => (v ?? '').length < 8 ? 'At least 8 characters' : null,
@@ -130,7 +130,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                 padding: const EdgeInsets.all(WpSpace.m),
                                 decoration: BoxDecoration(color: WpColors.redSoft, borderRadius: BorderRadius.circular(WpRadius.button)),
                                 child: Row(children: [
-                                  const Icon(Symbols.error_rounded, color: WpColors.red, size: 20),
+                                  const Icon(Symbols.error, color: WpColors.red, size: 20),
                                   const SizedBox(width: WpSpace.s),
                                   Expanded(child: Text(_error!, style: t.bodySmall!.copyWith(color: WpColors.red))),
                                 ]),

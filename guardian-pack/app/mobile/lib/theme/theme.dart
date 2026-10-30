@@ -55,6 +55,8 @@ ThemeData _build(Brightness b) {
     textTheme: text,
     splashFactory: InkSparkle.splashFactory,
     extensions: [wp],
+    // Material Symbols Outlined, drawn thin: plain line icons, no fills.
+    iconTheme: IconThemeData(color: wp.ink, weight: 300),
     appBarTheme: AppBarTheme(
       backgroundColor: wp.header,
       foregroundColor: Colors.white,

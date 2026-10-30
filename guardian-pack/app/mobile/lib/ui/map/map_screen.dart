@@ -93,7 +93,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
                   _lastCentered = null;
                   _recenter(pos);
                 },
-          icon: Icon(Symbols.my_location_rounded, color: _follow ? WpColors.cyan : Colors.white70),
+          icon: Icon(Symbols.my_location, color: _follow ? WpColors.cyan : Colors.white70),
         ),
       ),
       body: Stack(
@@ -217,12 +217,12 @@ class _StatusCard extends ConsumerWidget {
                           ],
                           if (d.insideZoneId != null) ...[
                             const SizedBox(width: WpSpace.m),
-                            Icon(Symbols.verified_user_rounded, size: 16, color: WpColors.green),
+                            Icon(Symbols.verified_user, size: 16, color: WpColors.green),
                             const SizedBox(width: WpSpace.xs),
                             Text('In a safe zone', style: t.bodySmall),
                           ] else if (!d.gpsFix && d.status != DeviceStatus.offline) ...[
                             const SizedBox(width: WpSpace.m),
-                            Icon(Symbols.location_searching_rounded, size: 16, color: context.wp.muted),
+                            Icon(Symbols.location_searching, size: 16, color: context.wp.muted),
                             const SizedBox(width: WpSpace.xs),
                             Flexible(
                               child: Text(d.position == null ? 'Waiting for GPS' : 'No GPS · last known spot',
@@ -242,23 +242,23 @@ class _StatusCard extends ConsumerWidget {
                 children: sos
                     ? [
                         _Action(
-                          icon: Symbols.directions_rounded,
+                          icon: Symbols.directions,
                           label: 'Directions',
                           onTap: d.position == null ? null : () => _open(context, _directionsUrl(d.position!)),
                         ),
                         _Action(
-                          icon: Symbols.call_rounded,
+                          icon: Symbols.call,
                           label: 'Call family',
                           primary: true,
                           danger: true,
                           onTap: () => _callFamily(context, d),
                         ),
-                        _Action(icon: Symbols.share_rounded, label: 'Share', onTap: d.position == null ? null : () => _share(d)),
+                        _Action(icon: Symbols.share, label: 'Share', onTap: d.position == null ? null : () => _share(d)),
                       ]
                     : [
-                        _Action(icon: Symbols.history_rounded, label: 'History', onTap: onHistory),
+                        _Action(icon: Symbols.history, label: 'History', onTap: onHistory),
                         _Action(
-                          icon: Symbols.notifications_active_rounded,
+                          icon: Symbols.notifications_active,
                           // Offline devices can't pick the buzz up: it waits, and can be withdrawn.
                           label: !d.buzz ? 'Find device' : (d.status == DeviceStatus.offline ? 'Cancel buzz' : 'Buzzing…'),
                           primary: true,
@@ -275,14 +275,14 @@ class _StatusCard extends ConsumerWidget {
                                   ? () => ref.read(deviceActionsProvider).cancelBuzz(d.cmdId)
                                   : null,
                         ),
-                        _Action(icon: Symbols.share_rounded, label: 'Share', onTap: d.position == null ? null : () => _share(d)),
+                        _Action(icon: Symbols.share, label: 'Share', onTap: d.position == null ? null : () => _share(d)),
                       ],
               ),
               if (sos)
                 Center(
                   child: TextButton.icon(
                     onPressed: () => _markSafe(context, ref, d),
-                    icon: const Icon(Symbols.verified_user_rounded, size: 18),
+                    icon: const Icon(Symbols.verified_user, size: 18),
                     label: Text('Mark ${d.name} as safe'),
                   ),
                 ),
@@ -346,7 +346,7 @@ class _StatusCard extends ConsumerWidget {
                     leading: Avatar(name: p.name, photo: p.photo, size: 40),
                     title: Text(p.name),
                     subtitle: Text(p.phone),
-                    trailing: const Icon(Symbols.call_rounded, color: WpColors.green),
+                    trailing: const Icon(Symbols.call, color: WpColors.green),
                     onTap: () => Navigator.pop(c, p.phone),
                   ),
                 const SizedBox(height: WpSpace.s),
@@ -357,18 +357,18 @@ class _StatusCard extends ConsumerWidget {
   }
 
   IconData _signalIcon(int csq) => csq == 99 || csq < 10
-      ? Symbols.signal_cellular_alt_1_bar_rounded
+      ? Symbols.signal_cellular_alt_1_bar
       : csq < 18
-          ? Symbols.signal_cellular_alt_2_bar_rounded
-          : Symbols.signal_cellular_alt_rounded;
+          ? Symbols.signal_cellular_alt_2_bar
+          : Symbols.signal_cellular_alt;
 
   IconData _batteryIcon(int pct) => pct > 80
-      ? Symbols.battery_full_rounded
+      ? Symbols.battery_full
       : pct > 50
-          ? Symbols.battery_5_bar_rounded
+          ? Symbols.battery_5_bar
           : pct > 20
-              ? Symbols.battery_3_bar_rounded
-              : Symbols.battery_1_bar_rounded;
+              ? Symbols.battery_3_bar
+              : Symbols.battery_1_bar;
 }
 
 class _Action extends StatelessWidget {

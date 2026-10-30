@@ -42,7 +42,7 @@ class ParentsScreen extends ConsumerWidget {
           if (demo) ...[
             const SizedBox(height: WpSpace.l),
             const _Note(
-              icon: Symbols.info_rounded,
+              icon: Symbols.info,
               text: 'This is the shared demo device — every new account can see it, so there is no parent list. '
                   'Invites work on real WatchPacks.',
             ),
@@ -65,7 +65,7 @@ class ParentsScreen extends ConsumerWidget {
                           : IconButton(
                               tooltip: 'Remove',
                               onPressed: () => _remove(context, ref, deviceId!, m, name),
-                              icon: Icon(Symbols.person_remove_rounded, color: context.wp.muted, size: 20),
+                              icon: Icon(Symbols.person_remove, color: context.wp.muted, size: 20),
                             ),
                     ),
                   ],
@@ -90,16 +90,16 @@ class ParentsScreen extends ConsumerWidget {
                     if (i > 0) Divider(color: context.wp.line),
                     ListTile(
                       onTap: inv.expired ? null : () => _showInvite(context, inv, name),
-                      leading: IconDisc(Symbols.key_rounded, color: inv.expired ? context.wp.muted : null),
+                      leading: IconDisc(Symbols.key, color: inv.expired ? context.wp.muted : null),
                       title: Text(fmtCode(inv.code), style: t.bodyMedium!.copyWith(fontFeatures: const [FontFeature.tabularFigures()], letterSpacing: 1)),
                       subtitle: Text(inv.expired ? 'Expired' : 'Until ${_until(inv.expiresAt)}', style: t.bodySmall),
                       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                         if (!inv.expired)
-                          IconButton(tooltip: 'Share', onPressed: () => _share(inv, name), icon: Icon(Symbols.share_rounded, color: context.wp.muted, size: 20)),
+                          IconButton(tooltip: 'Share', onPressed: () => _share(inv, name), icon: Icon(Symbols.share, color: context.wp.muted, size: 20)),
                         IconButton(
                           tooltip: inv.expired ? 'Remove' : 'Cancel invite',
                           onPressed: () => ref.read(linkActionsProvider).cancelInvite(inv.code),
-                          icon: Icon(Symbols.close_rounded, color: context.wp.muted, size: 20),
+                          icon: Icon(Symbols.close, color: context.wp.muted, size: 20),
                         ),
                       ]),
                     ),
@@ -190,7 +190,7 @@ class ParentsScreen extends ConsumerWidget {
                         await Clipboard.setData(ClipboardData(text: fmtCode(inv.code)));
                         if (c.mounted) showNote(c, 'Code copied.');
                       },
-                      icon: const Icon(Symbols.content_copy_rounded),
+                      icon: const Icon(Symbols.content_copy),
                       label: const Text('Copy'),
                     ),
                   ),
@@ -198,7 +198,7 @@ class ParentsScreen extends ConsumerWidget {
                   Expanded(
                     child: FilledButton.icon(
                       onPressed: () => _share(inv, name),
-                      icon: const Icon(Symbols.share_rounded),
+                      icon: const Icon(Symbols.share),
                       label: const Text('Share'),
                     ),
                   ),
@@ -241,7 +241,7 @@ class _InviteButtonState extends State<_InviteButton> {
                   if (mounted) setState(() => _busy = false);
                 }
               },
-        icon: const Icon(Symbols.person_add_rounded),
+        icon: const Icon(Symbols.person_add),
         label: Text(_busy ? 'Creating…' : 'Invite a parent'),
       );
 }

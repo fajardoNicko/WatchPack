@@ -95,7 +95,7 @@ class _ZoneEditorScreenState extends ConsumerState<ZoneEditorScreen> {
         trailing: IconButton(
           tooltip: 'Close',
           onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Symbols.close_rounded, color: Colors.white),
+          icon: const Icon(Symbols.close, color: Colors.white),
         ),
       ),
       body: Column(
@@ -134,7 +134,7 @@ class _ZoneEditorScreenState extends ConsumerState<ZoneEditorScreen> {
                 IgnorePointer(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 36),
-                    child: Icon(Symbols.location_on_rounded, fill: 1, size: 44, color: wp.accent,
+                    child: Icon(Symbols.location_on, fill: 1, size: 44, color: wp.accent,
                         shadows: const [Shadow(color: Color(0x55000000), blurRadius: 6, offset: Offset(0, 2))]),
                   ),
                 ),
@@ -149,7 +149,7 @@ class _ZoneEditorScreenState extends ConsumerState<ZoneEditorScreen> {
                       child: IconButton(
                         tooltip: 'Centre on ${device!.name}',
                         onPressed: () => _map.move(device.position!, 16),
-                        icon: const Icon(Symbols.my_location_rounded),
+                        icon: const Icon(Symbols.my_location),
                       ),
                     ),
                   ),
@@ -255,7 +255,7 @@ class _TypeChip extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: WpSpace.s),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(zoneIcon(type), fill: 1, size: 20, color: selected ? context.wp.onAccent : context.wp.muted),
+              Icon(zoneIcon(type), size: 20, color: selected ? context.wp.onAccent : context.wp.muted),
               const SizedBox(height: 2),
               Text(type.label,
                   maxLines: 1,

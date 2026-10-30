@@ -112,15 +112,15 @@ class _TabsState extends ConsumerState<_Tabs> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: setTab,
+        // Same line icon selected or not; the tab shows as selected by its colour.
         destinations: [
-          const NavigationDestination(icon: Icon(Symbols.location_on_rounded), selectedIcon: Icon(Symbols.location_on_rounded, fill: 1), label: 'Map Pin'),
-          const NavigationDestination(icon: Icon(Symbols.history_rounded), selectedIcon: Icon(Symbols.history_rounded, fill: 1), label: 'Trip History'),
+          const NavigationDestination(icon: Icon(Symbols.location_on), label: 'Map Pin'),
+          const NavigationDestination(icon: Icon(Symbols.history), label: 'Trip History'),
           NavigationDestination(
-            icon: Badge(isLabelVisible: unread > 0, label: Text('$unread'), child: const Icon(Symbols.notifications_rounded)),
-            selectedIcon: Badge(isLabelVisible: unread > 0, label: Text('$unread'), child: const Icon(Symbols.notifications_rounded, fill: 1)),
+            icon: Badge(isLabelVisible: unread > 0, label: Text('$unread'), child: const Icon(Symbols.notifications)),
             label: 'Notification',
           ),
-          const NavigationDestination(icon: Icon(Symbols.settings_rounded), selectedIcon: Icon(Symbols.settings_rounded, fill: 1), label: 'Settings'),
+          const NavigationDestination(icon: Icon(Symbols.settings), label: 'Settings'),
         ],
       ),
     );

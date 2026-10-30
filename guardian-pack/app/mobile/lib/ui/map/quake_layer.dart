@@ -46,7 +46,7 @@ void _showQuake(BuildContext context, Quake q) {
         padding: const EdgeInsets.fromLTRB(WpSpace.l, 0, WpSpace.l, WpSpace.l),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            IconDisc(Symbols.earthquake_rounded, color: quakeColor(q.mag), size: 44),
+            IconDisc(Symbols.earthquake, color: quakeColor(q.mag), size: 44),
             const SizedBox(width: WpSpace.m),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

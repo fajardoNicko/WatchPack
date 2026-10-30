@@ -69,7 +69,7 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
               Expanded(
                 child: list.isEmpty
                     ? const EmptyState(
-                        icon: Symbols.route_rounded,
+                        icon: Symbols.route,
                         title: 'No trips recorded',
                         body: 'Nothing was logged on this day. Pick another date.',
                       )
@@ -159,15 +159,15 @@ class _DayStrip extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.fromLTRB(WpSpace.s, WpSpace.s, WpSpace.s, WpSpace.m),
         child: Row(children: [
-          IconButton(onPressed: onPrev, icon: const Icon(Symbols.chevron_left_rounded)),
+          IconButton(onPressed: onPrev, icon: const Icon(Symbols.chevron_left)),
           Expanded(
             child: OutlinedButton.icon(
               onPressed: onPick,
-              icon: const Icon(Symbols.calendar_today_rounded, size: 18),
+              icon: const Icon(Symbols.calendar_today, size: 18),
               label: Text(isToday ? 'Today' : fmtDayShort(day)),
             ),
           ),
-          IconButton(onPressed: onNext, icon: const Icon(Symbols.chevron_right_rounded)),
+          IconButton(onPressed: onNext, icon: const Icon(Symbols.chevron_right)),
         ]),
       );
 }
