@@ -89,13 +89,15 @@ PolylineLayer trailLayer(List<LatLng> points, {Color color = WpColors.red}) => P
       Polyline(points: points, color: color, strokeWidth: 4, strokeCap: StrokeCap.round, strokeJoin: StrokeJoin.round),
     ]);
 
-/// The child's photo (or initials) in a map pin whose tip sits on the position.
-/// Pulses while the child is moving, red in SOS, faded when the device is offline.
+/// The child's photo (or initials) in a map pin whose tip sits on the position, with
+/// [label] ("Last seen 5 min ago") under it. Pulses while the child is moving, red
+/// in SOS, faded when the device is offline.
 class LiveMarker extends StatefulWidget {
-  const LiveMarker({super.key, required this.name, this.photo, required this.status});
+  const LiveMarker({super.key, required this.name, this.photo, required this.status, this.label});
   final String name;
   final String? photo;
   final DeviceStatus status;
+  final String? label;
 
   /// The box the pin is drawn in, and where its tip is inside that box — use them
   /// for the Marker so the tip, not the box centre, lands on the position.
@@ -195,6 +197,24 @@ class _LiveMarkerState extends State<LiveMarker> with SingleTickerProviderStateM
             ),
           ),
         Positioned.fill(child: widget.status == DeviceStatus.offline ? Opacity(opacity: 0.6, child: pin) : pin),
+        if (widget.label != null)
+          Positioned(
+            left: 0,
+            right: 0,
+            top: LiveMarker._tip.dy + 6,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: WpSpace.s, vertical: 3),
+                decoration: BoxDecoration(
+                  color: context.wp.card,
+                  borderRadius: BorderRadius.circular(WpRadius.chip),
+                  border: Border.all(color: context.wp.line),
+                  boxShadow: const [BoxShadow(color: Color(0x26000000), blurRadius: 4, offset: Offset(0, 1))],
+                ),
+                child: Text(widget.label!, maxLines: 1, style: context.text.labelSmall!.copyWith(color: context.wp.ink)),
+              ),
+            ),
+          ),
       ]),
     );
   }

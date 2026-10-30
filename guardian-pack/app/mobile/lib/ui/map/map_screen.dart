@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../data/clock.dart';
 import '../../data/models.dart';
 import '../../data/quakes.dart';
 import '../../data/repo.dart';
@@ -42,6 +43,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final fixes = ref.watch(fixesForDayProvider(dateOnly(DateTime.now())));
     final zones = ref.watch(zonesProvider);
     final quakes = ref.watch(quakesProvider);
+    final now = ref.watch(nowProvider);
     final pos = device.value?.position;
 
     if (_follow && pos != null) {
@@ -97,6 +99,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     name: device.value?.name ?? '',
                     photo: device.value?.photo,
                     status: device.value?.status ?? DeviceStatus.offline,
+                    label: fmtLastSeen(device.value?.lastSeen, now: now),
                   ),
                 ),
               attribution(),
@@ -134,6 +137,7 @@ class _StatusCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.text;
+    final now = ref.watch(nowProvider);
     return WpCard(
       padding: const EdgeInsets.fromLTRB(WpSpace.l, WpSpace.m, WpSpace.l, WpSpace.m),
       alert: device.value?.status == DeviceStatus.sos,
@@ -154,7 +158,7 @@ class _StatusCard extends ConsumerWidget {
                     child: Text(sos ? 'SOS — ${d.name} needs help' : 'Real-time tracking',
                         style: t.titleSmall!.copyWith(color: sos ? WpColors.red : null), overflow: TextOverflow.ellipsis),
                   ),
-                  Text(sos && d.sosAt != null ? 'since ${fmtTime(d.sosAt!)}' : fmtRelative(d.lastSeen), style: t.bodySmall),
+                  Text(sos && d.sosAt != null ? 'since ${fmtTime(d.sosAt!)}' : fmtLastSeen(d.lastSeen, now: now), style: t.bodySmall),
                 ],
               ),
               const SizedBox(height: WpSpace.s),
