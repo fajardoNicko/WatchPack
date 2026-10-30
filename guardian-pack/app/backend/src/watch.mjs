@@ -43,6 +43,17 @@ async function triggersOf(ref) {
 }
 
 const fmtM = (m) => (m === Infinity ? "more than 2 km" : m < 1000 ? `about ${Math.round(m / 10) * 10} m` : `about ${(m / 1000).toFixed(1)} km`);
+const fmtMin = (ms) => {
+  const min = Math.max(1, Math.round(ms / 60e3));
+  return min < 60 ? `${min} min` : `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ""}`;
+};
+
+// Zone names are free text. The app's defaults end in "Zone" ("Home Zone", "School
+// Zone"), which reads badly in a sentence: "arrived home", "left School".
+const place = (z) => {
+  const n = (z.name ?? "").replace(/\s+zone$/i, "").trim() || "a safe zone";
+  return n.toLowerCase() === "home" ? "home" : n;
+};
 
 async function evaluate(ref) {
   const snap = await ref.get();                    // fresh: an earlier pass may have patched watch.*
@@ -70,13 +81,22 @@ async function evaluate(ref) {
       const entered = zones
         .filter((z) => distM(here, z) <= (z.radiusM ?? 200))
         .sort((a, b) => (a.radiusM ?? 200) - (b.radiusM ?? 200))[0];
+      // Each zone picks which crossings alert (notify: both | arrive | leave).
+      let left = watch.left;                       // last departure, for "25 min after leaving School"
       if (current) {
-        // Names are free text ("Home Zone", "Mia's house"), so don't append "zone" to them.
-        // Each zone picks which crossings alert (notify: both | arrive | leave).
-        if (current.notify !== "arrive") await raise(ref, d, "zone_exit", `${name} left ${current.name}`, `Left at ${clock()}.`);
+        if (current.notify !== "arrive") {
+          await raise(ref, d, "zone_exit", `${name} left ${place(current)}`, `Left at ${clock()}.`);
+        }
+        left = { id: current.id, name: place(current), at: Date.now() };
+        patch["watch.left"] = left;
       }
       if (entered && entered.notify !== "leave") {
-        await raise(ref, d, "zone_enter", `${name} arrived at ${entered.name}`, `Arrived at ${clock()}.`);
+        const home = place(entered) === "home";
+        const ago = left && Date.now() - left.at < 3 * 3600e3 ? fmtMin(Date.now() - left.at) : null;
+        const body = !ago ? `Arrived at ${clock()}.`
+          : left.id === entered.id ? `Back at ${clock()}, ${ago} after leaving.`
+          : `Arrived at ${clock()}, ${ago} after leaving ${left.name}.`;
+        await raise(ref, d, "zone_enter", home ? `${name} arrived home` : `${name} arrived at ${place(entered)}`, body);
       }
       const next = entered?.id ?? null;
       if (next !== (d.insideZoneId ?? null)) patch.insideZoneId = next;
