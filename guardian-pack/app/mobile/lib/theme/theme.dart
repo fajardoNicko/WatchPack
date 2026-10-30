@@ -35,8 +35,8 @@ ThemeData _build(Brightness b) {
   final text = _textTheme(wp.ink, wp.muted);
   final scheme = ColorScheme(
     brightness: b,
-    primary: WpColors.navy,
-    onPrimary: Colors.white,
+    primary: wp.accent,                 // text buttons, sliders, focus rings
+    onPrimary: wp.onAccent,
     secondary: WpColors.cyan,
     onSecondary: WpColors.navyDeep,
     error: WpColors.red,
@@ -83,8 +83,8 @@ ThemeData _build(Brightness b) {
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: WpColors.navy,
-        foregroundColor: Colors.white,
+        backgroundColor: wp.accent,
+        foregroundColor: wp.onAccent,
         minimumSize: const Size(48, 48),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(WpRadius.button)),
         textStyle: text.labelLarge,
@@ -102,7 +102,7 @@ ThemeData _build(Brightness b) {
     switchTheme: SwitchThemeData(
       thumbColor: const WidgetStatePropertyAll(Colors.white),
       trackColor: WidgetStateProperty.resolveWith(
-        (s) => s.contains(WidgetState.selected) ? WpColors.navy : wp.line,
+        (s) => s.contains(WidgetState.selected) ? wp.accent : wp.line,
       ),
       trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
     ),

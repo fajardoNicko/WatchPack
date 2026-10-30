@@ -59,9 +59,15 @@ class WpScheme extends ThemeExtension<WpScheme> {
     required this.muted,
     required this.line,
     required this.header,
+    required this.accent,
+    required this.onAccent,
   });
 
   final Color bg, card, ink, muted, line, header;
+
+  /// Buttons, selected states and icons that carry the brand colour. Navy on light
+  /// surfaces; cyan on dark ones, where navy was blue-on-blue and unreadable.
+  final Color accent, onAccent;
 
   static const light = WpScheme(
     bg: WpColors.bg,
@@ -70,6 +76,8 @@ class WpScheme extends ThemeExtension<WpScheme> {
     muted: WpColors.muted,
     line: WpColors.line,
     header: WpColors.navy,
+    accent: WpColors.navy,
+    onAccent: Colors.white,
   );
 
   static const dark = WpScheme(
@@ -79,10 +87,12 @@ class WpScheme extends ThemeExtension<WpScheme> {
     muted: WpColors.mutedDark,
     line: WpColors.lineDark,
     header: WpColors.navyDark,
+    accent: WpColors.cyan,
+    onAccent: WpColors.navyDeep,
   );
 
   @override
-  WpScheme copyWith({Color? bg, Color? card, Color? ink, Color? muted, Color? line, Color? header}) =>
+  WpScheme copyWith({Color? bg, Color? card, Color? ink, Color? muted, Color? line, Color? header, Color? accent, Color? onAccent}) =>
       WpScheme(
         bg: bg ?? this.bg,
         card: card ?? this.card,
@@ -90,6 +100,8 @@ class WpScheme extends ThemeExtension<WpScheme> {
         muted: muted ?? this.muted,
         line: line ?? this.line,
         header: header ?? this.header,
+        accent: accent ?? this.accent,
+        onAccent: onAccent ?? this.onAccent,
       );
 
   @override
@@ -102,6 +114,8 @@ class WpScheme extends ThemeExtension<WpScheme> {
       muted: Color.lerp(muted, other.muted, t)!,
       line: Color.lerp(line, other.line, t)!,
       header: Color.lerp(header, other.header, t)!,
+      accent: Color.lerp(accent, other.accent, t)!,
+      onAccent: Color.lerp(onAccent, other.onAccent, t)!,
     );
   }
 }
