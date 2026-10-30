@@ -42,8 +42,8 @@ class AlertsScreen extends ConsumerWidget {
                 showSelectedIcon: false,
                 onSelectionChanged: (s) => ref.read(alertsSegmentProvider.notifier).set(s.first),
                 style: SegmentedButton.styleFrom(
-                  selectedBackgroundColor: WpColors.navy,
-                  selectedForegroundColor: Colors.white,
+                  selectedBackgroundColor: context.wp.accent,
+                  selectedForegroundColor: context.wp.onAccent,
                   side: BorderSide(color: context.wp.line),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(WpRadius.button)),
                 ),
@@ -246,7 +246,7 @@ class _ZoneCard extends StatelessWidget {
     return WpCard(
       padding: const EdgeInsets.fromLTRB(WpSpace.l, WpSpace.m, WpSpace.s, WpSpace.m),
       child: Row(children: [
-        IconDisc(zoneIcon(z.type), color: z.enabled ? WpColors.navy : context.wp.muted, size: 44),
+        IconDisc(zoneIcon(z.type), color: z.enabled ? null : context.wp.muted, size: 44),
         const SizedBox(width: WpSpace.m),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -332,7 +332,7 @@ class _FeedTab extends ConsumerWidget {
                     padding: const EdgeInsets.all(WpSpace.m),
                     onTap: () => showAlertSheet(context, a),
                     child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      IconDisc(alertIcon(a.type), color: alertColor(a.type)),
+                      IconDisc(alertIcon(a.type), color: alertColor(context, a.type)),
                       const SizedBox(width: WpSpace.m),
                       Expanded(
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

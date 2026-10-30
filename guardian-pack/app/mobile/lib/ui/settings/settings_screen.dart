@@ -270,7 +270,7 @@ class SettingsScreen extends ConsumerWidget {
           for (final (mode, label) in const [(ThemeMode.system, 'Match system'), (ThemeMode.light, 'Light'), (ThemeMode.dark, 'Dark')])
             ListTile(
               title: Text(label),
-              trailing: mode == current ? const Icon(Symbols.check_rounded, color: WpColors.navy, size: 20) : null,
+              trailing: mode == current ? Icon(Symbols.check_rounded, color: c.wp.accent, size: 20) : null,
               onTap: () => Navigator.pop(c, mode),
             ),
           const SizedBox(height: WpSpace.s),

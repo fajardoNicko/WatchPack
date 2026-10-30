@@ -80,7 +80,7 @@ class _ZonePin extends StatelessWidget {
             color: context.wp.card,
             border: Border.all(color: WpColors.cyan, width: 2),
           ),
-          child: Icon(zoneIcon(z.type), size: 16, fill: 1, color: WpColors.navy),
+          child: Icon(zoneIcon(z.type), size: 16, fill: 1, color: context.wp.accent),
         ),
       );
 }

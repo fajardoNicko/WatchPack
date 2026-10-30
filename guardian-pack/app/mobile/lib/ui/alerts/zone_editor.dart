@@ -134,7 +134,7 @@ class _ZoneEditorScreenState extends ConsumerState<ZoneEditorScreen> {
                 IgnorePointer(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 36),
-                    child: Icon(Symbols.location_on_rounded, fill: 1, size: 44, color: WpColors.navy,
+                    child: Icon(Symbols.location_on_rounded, fill: 1, size: 44, color: wp.accent,
                         shadows: const [Shadow(color: Color(0x55000000), blurRadius: 6, offset: Offset(0, 2))]),
                   ),
                 ),
@@ -197,7 +197,7 @@ class _ZoneEditorScreenState extends ConsumerState<ZoneEditorScreen> {
                       min: 100,
                       max: 1000,
                       divisions: 18,
-                      activeColor: WpColors.navy,
+                      activeColor: wp.accent,
                       inactiveColor: wp.line,
                       onChanged: (v) => setState(() => _radius = v),
                     ),
@@ -211,8 +211,8 @@ class _ZoneEditorScreenState extends ConsumerState<ZoneEditorScreen> {
                         showSelectedIcon: false,
                         onSelectionChanged: (s) => setState(() => _notify = s.first),
                         style: SegmentedButton.styleFrom(
-                          selectedBackgroundColor: WpColors.navy,
-                          selectedForegroundColor: Colors.white,
+                          selectedBackgroundColor: wp.accent,
+                          selectedForegroundColor: wp.onAccent,
                           side: BorderSide(color: wp.line),
                           visualDensity: VisualDensity.compact,
                           textStyle: t.labelMedium,
@@ -247,7 +247,7 @@ class _TypeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-        color: selected ? WpColors.navy : context.wp.bg,
+        color: selected ? context.wp.accent : context.wp.bg,
         borderRadius: BorderRadius.circular(WpRadius.button),
         child: InkWell(
           borderRadius: BorderRadius.circular(WpRadius.button),
@@ -255,12 +255,12 @@ class _TypeChip extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: WpSpace.s),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(zoneIcon(type), fill: 1, size: 20, color: selected ? Colors.white : context.wp.muted),
+              Icon(zoneIcon(type), fill: 1, size: 20, color: selected ? context.wp.onAccent : context.wp.muted),
               const SizedBox(height: 2),
               Text(type.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: context.text.labelMedium!.copyWith(color: selected ? Colors.white : context.wp.ink)),
+                  style: context.text.labelMedium!.copyWith(color: selected ? context.wp.onAccent : context.wp.ink)),
             ]),
           ),
         ),

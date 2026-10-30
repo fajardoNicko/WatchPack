@@ -171,26 +171,30 @@ IconData alertIcon(AlertType t) => switch (t) {
       AlertType.other => Symbols.notifications_rounded,
     };
 
-Color alertColor(AlertType t) => switch (t) {
+Color alertColor(BuildContext context, AlertType t) => switch (t) {
       AlertType.sos || AlertType.offRoute || AlertType.quake => WpColors.red,
       AlertType.lowBattery || AlertType.signalLoss || AlertType.weather => WpColors.amber,
       AlertType.onRoute || AlertType.zoneEnter => WpColors.green,
-      _ => WpColors.navy,
+      _ => context.wp.accent,
     };
 
 /// Round icon on a soft tinted disc — the one icon treatment used everywhere.
+/// [color] defaults to the theme's accent.
 class IconDisc extends StatelessWidget {
-  const IconDisc(this.icon, {super.key, this.color = WpColors.navy, this.size = 40});
+  const IconDisc(this.icon, {super.key, this.color, this.size = 40});
   final IconData icon;
-  final Color color;
+  final Color? color;
   final double size;
   @override
-  Widget build(BuildContext context) => Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(color: color.withValues(alpha: 0.12), shape: BoxShape.circle),
-        child: Icon(icon, color: color, size: size * 0.5, fill: 1),
-      );
+  Widget build(BuildContext context) {
+    final c = color ?? context.wp.accent;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: c.withValues(alpha: 0.12), shape: BoxShape.circle),
+      child: Icon(icon, color: c, size: size * 0.5, fill: 1),
+    );
+  }
 }
 
 class EmptyState extends StatelessWidget {
@@ -269,8 +273,8 @@ class Avatar extends StatelessWidget {
           child: Container(
             width: size * 0.36,
             height: size * 0.36,
-            decoration: BoxDecoration(color: WpColors.navy, shape: BoxShape.circle, border: Border.all(color: context.wp.card, width: 2)),
-            child: Icon(Symbols.photo_camera_rounded, size: size * 0.18, color: Colors.white, fill: 1),
+            decoration: BoxDecoration(color: context.wp.accent, shape: BoxShape.circle, border: Border.all(color: context.wp.card, width: 2)),
+            child: Icon(Symbols.photo_camera_rounded, size: size * 0.18, color: context.wp.onAccent, fill: 1),
           ),
         ),
       ]),

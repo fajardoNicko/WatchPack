@@ -356,12 +356,12 @@ class _Action extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onTap != null;
-    final fg = !enabled ? context.wp.muted : (primary ? Colors.white : context.wp.ink);
+    final fg = !enabled ? context.wp.muted : (primary ? (danger ? Colors.white : context.wp.onAccent) : context.wp.ink);
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: WpSpace.xs),
         child: Material(
-          color: primary ? (enabled ? (danger ? WpColors.red : WpColors.navy) : context.wp.line) : Colors.transparent,
+          color: primary ? (enabled ? (danger ? WpColors.red : context.wp.accent) : context.wp.line) : Colors.transparent,
           borderRadius: BorderRadius.circular(WpRadius.button),
           child: InkWell(
             borderRadius: BorderRadius.circular(WpRadius.button),
@@ -371,7 +371,7 @@ class _Action extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, size: 22, color: primary ? fg : (enabled ? WpColors.navy : fg)),
+                  Icon(icon, size: 22, color: primary ? fg : (enabled ? context.wp.accent : fg)),
                   const SizedBox(height: WpSpace.xs),
                   // One line always: a long label shrinks instead of wrapping under the icon.
                   FittedBox(

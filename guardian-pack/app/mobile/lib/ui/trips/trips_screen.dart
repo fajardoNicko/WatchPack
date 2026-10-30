@@ -114,7 +114,7 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
                                 ]),
                                 Slider(
                                   value: _scrub,
-                                  activeColor: WpColors.navy,
+                                  activeColor: context.wp.accent,
                                   inactiveColor: context.wp.line,
                                   onChanged: (v) => setState(() => _scrub = v),
                                 ),
@@ -210,7 +210,7 @@ class _SegmentRow extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: moving ? WpColors.cyan : context.wp.card,
-                    border: Border.all(color: moving ? WpColors.cyan : WpColors.navy, width: 2),
+                    border: Border.all(color: moving ? WpColors.cyan : context.wp.accent, width: 2),
                   ),
                 ),
               ),
@@ -252,7 +252,7 @@ class _ScrubDot extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: WpColors.navy,
+          color: context.wp.accent,
           border: Border.all(color: Colors.white, width: 3),
           boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 6, offset: Offset(0, 2))],
         ),
