@@ -9,7 +9,6 @@ import '../data/unread.dart';
 import '../push/push.dart';
 import 'alerts/alerts_screen.dart';
 import 'map/map_screen.dart';
-import 'motion.dart';
 import 'nav.dart';
 import 'settings/link_device_screen.dart';
 import 'settings/settings_screen.dart';
@@ -100,17 +99,15 @@ class _TabsState extends ConsumerState<_Tabs> {
     final unread = ref.watch(unreadAlertsProvider);
     final setTab = ref.read(tabProvider.notifier).set;
     return Scaffold(
-      body: TabFade(
-        switchKey: index,
-        child: IndexedStack(
-          index: index,
-          children: [
-            MapScreen(onOpenHistory: () => setTab(1)),
-            const TripsScreen(),
-            const AlertsScreen(),
-            const SettingsScreen(),
-          ],
-        ),
+      // Tabs swap instantly: no fade or slide between them.
+      body: IndexedStack(
+        index: index,
+        children: [
+          MapScreen(onOpenHistory: () => setTab(1)),
+          const TripsScreen(),
+          const AlertsScreen(),
+          const SettingsScreen(),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
