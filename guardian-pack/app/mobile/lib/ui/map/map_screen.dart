@@ -90,8 +90,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   tween: _LatLngTween(end: pos),
                   duration: const Duration(milliseconds: 900),
                   curve: Curves.easeInOut,
-                  builder: (_, p, marker) => MarkerLayer(markers: [Marker(point: p, width: 44, height: 44, child: marker!)]),
-                  child: LiveMarker(status: device.value?.status ?? DeviceStatus.offline),
+                  builder: (_, p, marker) => MarkerLayer(markers: [
+                    Marker(point: p, width: LiveMarker.width, height: LiveMarker.height, alignment: LiveMarker.alignment, child: marker!),
+                  ]),
+                  child: LiveMarker(
+                    name: device.value?.name ?? '',
+                    photo: device.value?.photo,
+                    status: device.value?.status ?? DeviceStatus.offline,
+                  ),
                 ),
               attribution(),
             ],

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:latlong2/latlong.dart' hide Path;
 
 import '../../data/models.dart';
 import '../../theme/tokens.dart';
@@ -89,17 +89,47 @@ PolylineLayer trailLayer(List<LatLng> points, {Color color = WpColors.red}) => P
       Polyline(points: points, color: color, strokeWidth: 4, strokeCap: StrokeCap.round, strokeJoin: StrokeJoin.round),
     ]);
 
-/// Cyan dot, navy ring, soft pulse. Red when in SOS.
+/// The child's photo (or initials) in a map pin whose tip sits on the position.
+/// Pulses while the child is moving, red in SOS, faded when the device is offline.
 class LiveMarker extends StatefulWidget {
-  const LiveMarker({super.key, required this.status});
+  const LiveMarker({super.key, required this.name, this.photo, required this.status});
+  final String name;
+  final String? photo;
   final DeviceStatus status;
+
+  /// The box the pin is drawn in, and where its tip is inside that box — use them
+  /// for the Marker so the tip, not the box centre, lands on the position.
+  static const width = 160.0, height = 112.0;
+  static const _tip = Offset(80, 78);
+  static final alignment = Marker.computePixelAlignment(width: width, height: height, left: _tip.dx, top: _tip.dy);
+
+  static const _head = 48.0;               // photo + white ring
+  static const _headTop = 20.0;
 
   @override
   State<LiveMarker> createState() => _LiveMarkerState();
 }
 
 class _LiveMarkerState extends State<LiveMarker> with SingleTickerProviderStateMixin {
-  late final _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800))..repeat();
+  late final _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600));
+
+  bool get _pulsing => widget.status == DeviceStatus.moving || widget.status == DeviceStatus.sos;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_pulsing) _c.repeat();
+  }
+
+  @override
+  void didUpdateWidget(LiveMarker old) {
+    super.didUpdateWidget(old);
+    if (_pulsing && !_c.isAnimating) {
+      _c.repeat();
+    } else if (!_pulsing && _c.isAnimating) {
+      _c.reset();
+    }
+  }
 
   @override
   void dispose() {
@@ -109,34 +139,83 @@ class _LiveMarkerState extends State<LiveMarker> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.status == DeviceStatus.sos ? WpColors.red : WpColors.cyan;
-    final pulsing = widget.status != DeviceStatus.offline;
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (_, _) {
-        final t = Curves.easeOut.transform(_c.value);
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            if (pulsing)
-              Container(
-                width: 14 + 30 * t,
-                height: 14 + 30 * t,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: 0.35 * (1 - t))),
-              ),
-            Container(
-              width: 18,
-              height: 18,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: pulsing ? color : WpColors.muted,
-                border: Border.all(color: Colors.white, width: 3),
-                boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 6, offset: Offset(0, 2))],
-              ),
+    final sos = widget.status == DeviceStatus.sos;
+    final ring = sos ? WpColors.red : (widget.status == DeviceStatus.offline ? WpColors.muted : Colors.white);
+    const head = LiveMarker._head, top = LiveMarker._headTop, cx = LiveMarker.width / 2;
+    final pin = Stack(clipBehavior: Clip.none, children: [
+      // Tail first so the round head overlaps its base.
+      Positioned(
+        left: cx - 9,
+        top: top + head - 8,
+        child: CustomPaint(size: Size(18, LiveMarker._tip.dy - (top + head - 8)), painter: _PinTail(ring)),
+      ),
+      Positioned(
+        left: cx - head / 2,
+        top: top,
+        child: Container(
+          width: head,
+          height: head,
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: ring,
+            boxShadow: const [BoxShadow(color: Color(0x40000000), blurRadius: 6, offset: Offset(0, 2))],
+          ),
+          child: Avatar(name: widget.name, photo: widget.photo, size: head - 6),
+        ),
+      ),
+    ]);
+
+    return SizedBox(
+      width: LiveMarker.width,
+      height: LiveMarker.height,
+      child: Stack(clipBehavior: Clip.none, children: [
+        if (_pulsing)
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _c,
+              builder: (_, _) {
+                final t = Curves.easeOut.transform(_c.value);
+                final d = head + 40 * t;
+                return Stack(clipBehavior: Clip.none, children: [
+                  Positioned(
+                    left: cx - d / 2,
+                    top: top + head / 2 - d / 2,
+                    child: Container(
+                      width: d,
+                      height: d,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: (sos ? WpColors.red : WpColors.cyan).withValues(alpha: 0.35 * (1 - t)),
+                      ),
+                    ),
+                  ),
+                ]);
+              },
             ),
-          ],
-        );
-      },
+          ),
+        Positioned.fill(child: widget.status == DeviceStatus.offline ? Opacity(opacity: 0.6, child: pin) : pin),
+      ]),
     );
   }
+}
+
+/// The pin's pointer: a short triangle from under the head down to the tip.
+class _PinTail extends CustomPainter {
+  const _PinTail(this.color);
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..close();
+    canvas.drawShadow(path, Colors.black, 2, false);
+    canvas.drawPath(path, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(_PinTail old) => old.color != color;
 }
