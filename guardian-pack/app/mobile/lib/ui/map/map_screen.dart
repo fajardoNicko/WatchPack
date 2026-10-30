@@ -27,15 +27,44 @@ class MapScreen extends ConsumerStatefulWidget {
   ConsumerState<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends ConsumerState<MapScreen> {
+class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProviderStateMixin {
   final _map = MapController();
   bool _follow = true;      // re-centre on every fix until the user pans
   LatLng? _lastCentered;
 
-  void _recenter(LatLng p) {
+  // Following: the camera glides to each new fix alongside the pin instead of jumping.
+  late final _cam = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..addListener(_camStep);
+  LatLng _camFrom = const LatLng(0, 0), _camTo = const LatLng(0, 0);
+
+  void _camStep() {
+    final t = Curves.easeInOut.transform(_cam.value);
+    _map.move(
+      LatLng(_camFrom.latitude + (_camTo.latitude - _camFrom.latitude) * t, _camFrom.longitude + (_camTo.longitude - _camFrom.longitude) * t),
+      _map.camera.zoom,
+    );
+  }
+
+  /// First centring, the "centre" button and big jumps (another child picked) move
+  /// at once; later fixes glide.
+  void _recenter(LatLng p, {bool glide = false}) {
     if (_lastCentered == p) return;
+    final first = _lastCentered == null;
     _lastCentered = p;
-    _map.move(p, _map.camera.zoom < 14 ? 15.5 : _map.camera.zoom);
+    final near = const DistanceHaversine().distance(_map.camera.center, p) < 2000;
+    if (glide && !first && near && _map.camera.zoom >= 14) {
+      _camFrom = _map.camera.center;
+      _camTo = p;
+      _cam.forward(from: 0);
+    } else {
+      _cam.stop();
+      _map.move(p, _map.camera.zoom < 14 ? 15.5 : _map.camera.zoom);
+    }
+  }
+
+  @override
+  void dispose() {
+    _cam.dispose();
+    super.dispose();
   }
 
   @override
@@ -48,7 +77,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final pos = device.value?.position;
 
     if (_follow && pos != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _recenter(pos));
+      WidgetsBinding.instance.addPostFrameCallback((_) => _recenter(pos, glide: true));
     }
 
     final trail = simplify([for (final f in fixes.value ?? const <Fix>[]) f.point]);
@@ -76,7 +105,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               initialZoom: pos == null ? 11 : 15.5,
               interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
               onPositionChanged: (_, hasGesture) {
-                if (hasGesture && _follow) setState(() => _follow = false);
+                if (!hasGesture) return;
+                _cam.stop();
+                if (_follow) setState(() => _follow = false);
               },
             ),
             children: [
