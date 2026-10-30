@@ -64,7 +64,7 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(width: WpSpace.m),
             Expanded(
               child: _BigCard(
-                icon: Symbols.groups,
+                icon: Symbols.group,
                 title: 'Parental account',
                 body: parents > 1 ? '$parents parents can see ${device?.name ?? 'this device'}' : 'Add another parent for shared monitoring',
                 action: parents > 1 ? 'Manage' : 'Add parent',
@@ -105,7 +105,7 @@ class SettingsScreen extends ConsumerWidget {
               _Row(icon: Symbols.lock, title: 'Security & privacy', onTap: () => SecurityScreen.open(context)),
               Divider(color: context.wp.line),
               _Row(
-                icon: Symbols.palette,
+                icon: Symbols.contrast,
                 title: 'Appearance',
                 trailing: Text(switch (mode) { ThemeMode.system => 'System', ThemeMode.light => 'Light', ThemeMode.dark => 'Dark' }, style: t.bodySmall),
                 onTap: () => _pickTheme(context, ref, mode),

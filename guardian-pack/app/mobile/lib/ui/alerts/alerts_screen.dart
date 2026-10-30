@@ -30,12 +30,8 @@ class AlertsScreen extends ConsumerWidget {
               width: double.infinity,
               child: SegmentedButton<int>(
                 segments: [
-                  const ButtonSegment(value: 0, label: Text('Zones & triggers'), icon: Icon(Symbols.verified_user, size: 18)),
-                  ButtonSegment(
-                    value: 1,
-                    label: Text(unread > 0 && tab != 1 ? 'Alert feed ($unread)' : 'Alert feed'),
-                    icon: const Icon(Symbols.notifications, size: 18),
-                  ),
+                  const ButtonSegment(value: 0, label: Text('Zones & triggers')),
+                  ButtonSegment(value: 1, label: Text(unread > 0 && tab != 1 ? 'Alert feed ($unread)' : 'Alert feed')),
                 ],
                 selected: {tab},
                 showSelectedIcon: false,
@@ -72,7 +68,7 @@ class _ZonesTab extends ConsumerWidget {
       children: [
         FilledButton.icon(
           onPressed: () => ZoneEditorScreen.open(context),
-          icon: const Icon(Symbols.add_circle),
+          icon: const Icon(Symbols.add),
           label: const Text('Create new safety zone'),
         ),
         const SectionTitle('Safety zones'),
@@ -103,7 +99,7 @@ class _ZonesTab extends ConsumerWidget {
             padding: EdgeInsets.zero,
             child: Column(children: [
               _TriggerRow(
-                icon: Symbols.battery_1_bar,
+                icon: Symbols.battery_alert,
                 color: WpColors.amber,
                 title: 'Low battery alert',
                 detail: 'Trigger: ${tr.lowBatteryPct}%  ·  tap to change',
@@ -137,7 +133,7 @@ class _ZonesTab extends ConsumerWidget {
               ),
               Divider(color: context.wp.line),
               _TriggerRow(
-                icon: Symbols.warning,
+                icon: Symbols.wrong_location,
                 color: WpColors.red,
                 title: 'Off-route alert',
                 detail: 'Far from everywhere ${device?.name ?? 'your child'} usually goes. Learns over 3 days.',

@@ -258,7 +258,7 @@ class _StatusCard extends ConsumerWidget {
                     : [
                         _Action(icon: Symbols.history, label: 'History', onTap: onHistory),
                         _Action(
-                          icon: Symbols.notifications_active,
+                          icon: Symbols.volume_up,
                           // Offline devices can't pick the buzz up: it waits, and can be withdrawn.
                           label: !d.buzz ? 'Find device' : (d.status == DeviceStatus.offline ? 'Cancel buzz' : 'Buzzing…'),
                           primary: true,
