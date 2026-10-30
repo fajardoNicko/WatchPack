@@ -10,7 +10,6 @@ import '../../auth/auth.dart';
 import '../../data/linking.dart';
 import '../../data/repo.dart';
 import '../../theme/tokens.dart';
-import '../motion.dart';
 import '../widgets.dart';
 
 /// Parental account: who can see the device, and invites for another parent.
@@ -57,20 +56,17 @@ class ParentsScreen extends ConsumerWidget {
                 child: Column(children: [
                   for (final (i, m) in list.indexed) ...[
                     if (i > 0) Divider(color: context.wp.line),
-                    FadeSlideIn(
-                      index: i,
-                      child: ListTile(
-                        leading: Avatar(name: m.name, photo: m.photo, size: 40),
-                        title: Text(m.name.isEmpty ? m.email : m.name, style: t.bodyMedium),
-                        subtitle: Text(m.email, style: t.bodySmall),
-                        trailing: m.uid == me
-                            ? const _Chip('You')
-                            : IconButton(
-                                tooltip: 'Remove',
-                                onPressed: () => _remove(context, ref, deviceId!, m, name),
-                                icon: Icon(Symbols.person_remove_rounded, color: context.wp.muted, size: 20),
-                              ),
-                      ),
+                    ListTile(
+                      leading: Avatar(name: m.name, photo: m.photo, size: 40),
+                      title: Text(m.name.isEmpty ? m.email : m.name, style: t.bodyMedium),
+                      subtitle: Text(m.email, style: t.bodySmall),
+                      trailing: m.uid == me
+                          ? const _Chip('You')
+                          : IconButton(
+                              tooltip: 'Remove',
+                              onPressed: () => _remove(context, ref, deviceId!, m, name),
+                              icon: Icon(Symbols.person_remove_rounded, color: context.wp.muted, size: 20),
+                            ),
                     ),
                   ],
                   if (list.isEmpty) Padding(padding: const EdgeInsets.all(WpSpace.l), child: Text('Only you so far.', style: t.bodySmall)),

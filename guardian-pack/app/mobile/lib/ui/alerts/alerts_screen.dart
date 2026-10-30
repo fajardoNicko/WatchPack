@@ -7,7 +7,6 @@ import '../../data/repo.dart';
 import '../../data/unread.dart';
 import '../../theme/tokens.dart';
 import '../../util/format.dart';
-import '../motion.dart';
 import '../nav.dart';
 import '../widgets.dart';
 import 'alert_sheet.dart';
@@ -50,12 +49,7 @@ class AlertsScreen extends ConsumerWidget {
               ),
             ),
           ),
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: WpMotion.base,
-              child: tab == 0 ? const _ZonesTab(key: ValueKey(0)) : const _FeedTab(key: ValueKey(1)),
-            ),
-          ),
+          Expanded(child: tab == 0 ? const _ZonesTab(key: ValueKey(0)) : const _FeedTab(key: ValueKey(1))),
         ],
       ),
     );
@@ -88,17 +82,14 @@ class _ZonesTab extends ConsumerWidget {
           data: (list) => list.isEmpty
               ? const EmptyState(icon: Symbols.map_rounded, title: 'No zones yet', body: 'Register home, school, a friend\'s or relative\'s house, the tutor… to get arrival and departure alerts.')
               : Column(children: [
-                  for (final (i, z) in list.indexed) ...[
-                    FadeSlideIn(
+                  for (final z in list) ...[
+                    _ZoneCard(
+                      z,
                       key: ValueKey(z.id),
-                      index: i,
-                      child: _ZoneCard(
-                        z,
-                        deviceName: device?.name,
-                        onToggle: (v) => actions.setZoneEnabled(z.id, v),
-                        onEdit: () => ZoneEditorScreen.open(context, existing: z),
-                        onDelete: () => _confirmDelete(context, z, actions),
-                      ),
+                      deviceName: device?.name,
+                      onToggle: (v) => actions.setZoneEnabled(z.id, v),
+                      onEdit: () => ZoneEditorScreen.open(context, existing: z),
+                      onDelete: () => _confirmDelete(context, z, actions),
                     ),
                     const SizedBox(height: WpSpace.m),
                   ]
@@ -234,7 +225,7 @@ class _ZonesTab extends ConsumerWidget {
 }
 
 class _ZoneCard extends StatelessWidget {
-  const _ZoneCard(this.z, {required this.deviceName, required this.onToggle, required this.onEdit, required this.onDelete});
+  const _ZoneCard(this.z, {super.key, required this.deviceName, required this.onToggle, required this.onEdit, required this.onDelete});
   final Zone z;
   final String? deviceName;
   final ValueChanged<bool> onToggle;
@@ -326,7 +317,7 @@ class _FeedTab extends ConsumerWidget {
               itemBuilder: (_, i) {
                 final a = list[i];
                 final showDay = i == 0 || !sameDay(a.ts, list[i - 1].ts);
-                return FadeSlideIn(key: ValueKey(a.id), index: i, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                return Column(key: ValueKey(a.id), crossAxisAlignment: CrossAxisAlignment.start, children: [
                   if (showDay) Padding(padding: const EdgeInsets.only(bottom: WpSpace.s, left: WpSpace.xs), child: Text(sameDay(a.ts, DateTime.now()) ? 'Today' : fmtDayShort(a.ts), style: t.labelSmall)),
                   WpCard(
                     padding: const EdgeInsets.all(WpSpace.m),
@@ -346,7 +337,7 @@ class _FeedTab extends ConsumerWidget {
                       ),
                     ]),
                   ),
-                ]));
+                ]);
               },
             ),
     );

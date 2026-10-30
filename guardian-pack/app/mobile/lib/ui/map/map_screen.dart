@@ -12,7 +12,6 @@ import '../../data/repo.dart';
 import '../../data/trips.dart';
 import '../../theme/tokens.dart';
 import '../../util/format.dart';
-import '../motion.dart';
 import '../widgets.dart';
 import 'map_layers.dart';
 import 'quake_layer.dart';
@@ -101,11 +100,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             left: WpSpace.l,
             right: WpSpace.l,
             bottom: WpSpace.l,
-            child: FadeSlideIn(
-              child: _StatusCard(
-                device: device,
-                onHistory: widget.onOpenHistory,
-              ),
+            child: _StatusCard(
+              device: device,
+              onHistory: widget.onOpenHistory,
             ),
           ),
         ],

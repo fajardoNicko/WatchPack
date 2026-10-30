@@ -9,7 +9,6 @@ import '../../data/repo.dart';
 import '../../theme/theme_mode.dart';
 import '../../theme/tokens.dart';
 import '../../util/format.dart';
-import '../motion.dart';
 import '../widgets.dart';
 import 'link_device_screen.dart';
 import 'parents_screen.dart';
@@ -42,90 +41,78 @@ class SettingsScreen extends ConsumerWidget {
                     scrollDirection: Axis.horizontal,
                     itemCount: device.contacts.length + 1,
                     separatorBuilder: (_, _) => const SizedBox(width: WpSpace.l),
-                    itemBuilder: (_, i) => FadeSlideIn(
-                      index: i,
-                      child: i == device.contacts.length
-                          ? _AddContact(onTap: () => _editContact(context, ref, device, null))
-                          : _ContactTile(
-                              device.contacts[i],
-                              onPhoto: () => _contactPhoto(context, ref, device, i),
-                              onEdit: () => _editContact(context, ref, device, i),
-                            ),
-                    ),
+                    itemBuilder: (_, i) => i == device.contacts.length
+                        ? _AddContact(onTap: () => _editContact(context, ref, device, null))
+                        : _ContactTile(
+                            device.contacts[i],
+                            onPhoto: () => _contactPhoto(context, ref, device, i),
+                            onEdit: () => _editContact(context, ref, device, i),
+                          ),
                   ),
           ),
           const SizedBox(height: WpSpace.m),
-          FadeSlideIn(
-            index: 2,
-            child: Row(children: [
-              Expanded(
-                child: _BigCard(
-                  icon: Symbols.phone_android_rounded,
-                  title: 'Device linking',
-                  body: device == null ? 'Link a physical WatchPack device' : 'Showing ${device.name} (${device.id})',
-                  action: (profile?.deviceIds.length ?? 0) > 1 ? 'Switch' : 'Link another',
-                  onTap: () => showDevicePicker(context, ref),
-                ),
+          Row(children: [
+            Expanded(
+              child: _BigCard(
+                icon: Symbols.phone_android_rounded,
+                title: 'Device linking',
+                body: device == null ? 'Link a physical WatchPack device' : 'Showing ${device.name} (${device.id})',
+                action: (profile?.deviceIds.length ?? 0) > 1 ? 'Switch' : 'Link another',
+                onTap: () => showDevicePicker(context, ref),
               ),
-              const SizedBox(width: WpSpace.m),
-              Expanded(
-                child: _BigCard(
-                  icon: Symbols.groups_rounded,
-                  title: 'Parental account',
-                  body: parents > 1 ? '$parents parents can see ${device?.name ?? 'this device'}' : 'Add another parent for shared monitoring',
-                  action: parents > 1 ? 'Manage' : 'Add parent',
-                  onTap: () => ParentsScreen.open(context),
-                ),
+            ),
+            const SizedBox(width: WpSpace.m),
+            Expanded(
+              child: _BigCard(
+                icon: Symbols.groups_rounded,
+                title: 'Parental account',
+                body: parents > 1 ? '$parents parents can see ${device?.name ?? 'this device'}' : 'Add another parent for shared monitoring',
+                action: parents > 1 ? 'Manage' : 'Add parent',
+                onTap: () => ParentsScreen.open(context),
               ),
-            ]),
-          ),
+            ),
+          ]),
           if (device != null) ...[
             const SectionTitle('Child'),
-            FadeSlideIn(
-              index: 3,
-              child: WpCard(
-                padding: EdgeInsets.zero,
-                child: ListTile(
-                  leading: Avatar(name: device.name, photo: device.photo, size: 44, onTap: () => _childPhoto(context, ref, device)),
-                  title: Text(device.name, style: t.bodyMedium),
-                  subtitle: Text('WatchPack ${device.id}', style: t.bodySmall),
-                  trailing: Icon(Symbols.edit_rounded, size: 18, color: context.wp.muted),
-                  onTap: () => _editChildName(context, ref, device),
-                ),
+            WpCard(
+              padding: EdgeInsets.zero,
+              child: ListTile(
+                leading: Avatar(name: device.name, photo: device.photo, size: 44, onTap: () => _childPhoto(context, ref, device)),
+                title: Text(device.name, style: t.bodyMedium),
+                subtitle: Text('WatchPack ${device.id}', style: t.bodySmall),
+                trailing: Icon(Symbols.edit_rounded, size: 18, color: context.wp.muted),
+                onTap: () => _editChildName(context, ref, device),
               ),
             ),
           ],
           const SectionTitle('Account'),
-          FadeSlideIn(
-            index: 4,
-            child: WpCard(
-              padding: EdgeInsets.zero,
-              child: Column(children: [
-                ListTile(
-                  leading: Avatar(
-                    name: profile?.displayName ?? '',
-                    photo: profile?.photo,
-                    size: 44,
-                    onTap: profile == null ? null : () => _parentPhoto(context, ref, profile),
-                  ),
-                  title: Text(profile?.displayName.isNotEmpty == true ? profile!.displayName : 'Parent', style: t.bodyMedium),
-                  subtitle: Text(profile?.email ?? '', style: t.bodySmall),
-                  trailing: Icon(Symbols.edit_rounded, size: 18, color: context.wp.muted),
-                  onTap: profile == null ? null : () => _editName(context, ref, profile),
+          WpCard(
+            padding: EdgeInsets.zero,
+            child: Column(children: [
+              ListTile(
+                leading: Avatar(
+                  name: profile?.displayName ?? '',
+                  photo: profile?.photo,
+                  size: 44,
+                  onTap: profile == null ? null : () => _parentPhoto(context, ref, profile),
                 ),
-                Divider(color: context.wp.line),
-                _Row(icon: Symbols.lock_rounded, title: 'Security & privacy', onTap: () => SecurityScreen.open(context)),
-                Divider(color: context.wp.line),
-                _Row(
-                  icon: Symbols.palette_rounded,
-                  title: 'Appearance',
-                  trailing: Text(switch (mode) { ThemeMode.system => 'System', ThemeMode.light => 'Light', ThemeMode.dark => 'Dark' }, style: t.bodySmall),
-                  onTap: () => _pickTheme(context, ref, mode),
-                ),
-                Divider(color: context.wp.line),
-                _Row(icon: Symbols.logout_rounded, title: 'Sign out', onTap: () => _confirmSignOut(context, ref)),
-              ]),
-            ),
+                title: Text(profile?.displayName.isNotEmpty == true ? profile!.displayName : 'Parent', style: t.bodyMedium),
+                subtitle: Text(profile?.email ?? '', style: t.bodySmall),
+                trailing: Icon(Symbols.edit_rounded, size: 18, color: context.wp.muted),
+                onTap: profile == null ? null : () => _editName(context, ref, profile),
+              ),
+              Divider(color: context.wp.line),
+              _Row(icon: Symbols.lock_rounded, title: 'Security & privacy', onTap: () => SecurityScreen.open(context)),
+              Divider(color: context.wp.line),
+              _Row(
+                icon: Symbols.palette_rounded,
+                title: 'Appearance',
+                trailing: Text(switch (mode) { ThemeMode.system => 'System', ThemeMode.light => 'Light', ThemeMode.dark => 'Dark' }, style: t.bodySmall),
+                onTap: () => _pickTheme(context, ref, mode),
+              ),
+              Divider(color: context.wp.line),
+              _Row(icon: Symbols.logout_rounded, title: 'Sign out', onTap: () => _confirmSignOut(context, ref)),
+            ]),
           ),
           const SizedBox(height: WpSpace.xl),
           Center(child: Text('WatchPack 1.1  ·  device ${device?.id ?? '—'}', style: t.labelSmall)),
@@ -306,8 +293,9 @@ class _AddContact extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => PressScale(
+  Widget build(BuildContext context) => GestureDetector(
         onTap: onTap,
+        behavior: HitTestBehavior.opaque,
         child: SizedBox(
           width: 72,
           child: Column(children: [

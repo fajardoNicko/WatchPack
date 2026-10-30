@@ -43,11 +43,10 @@ abstract final class WpSpace {
   static const xxl = 32.0;
 }
 
+/// Only colour changes animate (an SOS card turning red). Screens, tabs and lists
+/// appear without motion.
 abstract final class WpMotion {
-  static const fast = Duration(milliseconds: 150);
   static const base = Duration(milliseconds: 200);
-  static const marker = Duration(milliseconds: 600);
-  static const curve = Curves.easeOutCubic;
 }
 
 /// Semantic colours that flip with the theme. Read via `context.wp`.
