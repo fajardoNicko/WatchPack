@@ -241,21 +241,23 @@ class Avatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final bytes = avatarBytes(photo);
     final initials = name.trim().split(RegExp(r'\s+')).take(2).map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join();
-    final disc = Container(
-      width: size,
-      height: size,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: WpColors.cyanSoft,
-        border: Border.all(color: WpColors.cyan, width: 2),
-      ),
-      alignment: Alignment.center,
-      child: bytes != null
-          ? Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true, width: size, height: size)
-          : Text(initials.isEmpty ? '?' : initials,
-              style: TextStyle(fontFamily: 'Inter', fontSize: size * 0.32, fontWeight: FontWeight.w600, color: WpColors.navy)),
-    );
+    // A photo is clipped to the full circle with no ring. A border on the clipping box
+    // insets the photo, so its corners poked out past the ring and the ring only
+    // showed on the four sides — the avatar read as a square.
+    final disc = bytes != null
+        ? ClipOval(child: Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true, width: size, height: size))
+        : Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: WpColors.cyanSoft,
+              border: Border.all(color: WpColors.cyan, width: 2),
+            ),
+            alignment: Alignment.center,
+            child: Text(initials.isEmpty ? '?' : initials,
+                style: TextStyle(fontFamily: 'Inter', fontSize: size * 0.32, fontWeight: FontWeight.w600, color: WpColors.navy)),
+          );
     if (onTap == null) return disc;
     return GestureDetector(
       onTap: onTap,
