@@ -237,7 +237,7 @@ class _ZoneCard extends StatelessWidget {
     return WpCard(
       padding: const EdgeInsets.fromLTRB(WpSpace.l, WpSpace.m, WpSpace.s, WpSpace.m),
       child: Row(children: [
-        IconDisc(zoneIcon(z.type), color: z.enabled ? null : context.wp.muted, size: 44),
+        IconMark(zoneIcon(z.type), color: z.enabled ? null : context.wp.muted, size: 44),
         const SizedBox(width: WpSpace.m),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -277,7 +277,7 @@ class _TriggerRow extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(WpSpace.l, WpSpace.s, WpSpace.s, WpSpace.s),
           child: Row(children: [
-            IconDisc(icon, color: color, size: 40),
+            IconMark(icon, color: color, size: 40),
             const SizedBox(width: WpSpace.m),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -323,7 +323,7 @@ class _FeedTab extends ConsumerWidget {
                     padding: const EdgeInsets.all(WpSpace.m),
                     onTap: () => showAlertSheet(context, a),
                     child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      IconDisc(alertIcon(a.type), color: alertColor(context, a.type)),
+                      IconMark(alertIcon(a.type), color: alertColor(context, a.type)),
                       const SizedBox(width: WpSpace.m),
                       Expanded(
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

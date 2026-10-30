@@ -321,7 +321,7 @@ class _BigCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => WpCard(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          IconDisc(icon, size: 44),
+          Icon(icon, size: 26, color: context.wp.accent),     // flush with the title below
           const SizedBox(height: WpSpace.m),
           Text(title, style: context.text.titleSmall),
           const SizedBox(height: 2),

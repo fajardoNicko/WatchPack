@@ -90,7 +90,7 @@ class ParentsScreen extends ConsumerWidget {
                     if (i > 0) Divider(color: context.wp.line),
                     ListTile(
                       onTap: inv.expired ? null : () => _showInvite(context, inv, name),
-                      leading: IconDisc(Symbols.key, color: inv.expired ? context.wp.muted : null),
+                      leading: IconMark(Symbols.key, color: inv.expired ? context.wp.muted : null),
                       title: Text(fmtCode(inv.code), style: t.bodyMedium!.copyWith(fontFeatures: const [FontFeature.tabularFigures()], letterSpacing: 1)),
                       subtitle: Text(inv.expired ? 'Expired' : 'Until ${_until(inv.expiresAt)}', style: t.bodySmall),
                       trailing: Row(mainAxisSize: MainAxisSize.min, children: [

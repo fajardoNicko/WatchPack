@@ -21,7 +21,7 @@ void showAlertSheet(BuildContext context, Alert a) {
         padding: const EdgeInsets.fromLTRB(WpSpace.l, 0, WpSpace.l, WpSpace.l),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Row(children: [
-            IconDisc(alertIcon(a.type), color: alertColor(context, a.type), size: 44),
+            IconMark(alertIcon(a.type), color: alertColor(context, a.type), size: 44),
             const SizedBox(width: WpSpace.m),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

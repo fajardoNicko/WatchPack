@@ -32,7 +32,7 @@ class LinkDeviceScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const IconDisc(Symbols.phone_android, size: 72),
+              const IconMark(Symbols.phone_android, size: 72),
               const SizedBox(height: WpSpace.l),
               Text('Link your child\'s WatchPack', style: t.titleLarge, textAlign: TextAlign.center),
               const SizedBox(height: WpSpace.s),

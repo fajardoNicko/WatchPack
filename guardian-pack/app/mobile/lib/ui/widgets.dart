@@ -178,23 +178,19 @@ Color alertColor(BuildContext context, AlertType t) => switch (t) {
       _ => context.wp.accent,
     };
 
-/// Round icon on a soft tinted disc — the one icon treatment used everywhere.
-/// [color] defaults to the theme's accent.
-class IconDisc extends StatelessWidget {
-  const IconDisc(this.icon, {super.key, this.color, this.size = 40});
+/// A line icon in a [size] square — no disc or tint behind it, the one icon
+/// treatment used everywhere. [color] defaults to the theme's accent.
+class IconMark extends StatelessWidget {
+  const IconMark(this.icon, {super.key, this.color, this.size = 40});
   final IconData icon;
   final Color? color;
   final double size;
   @override
-  Widget build(BuildContext context) {
-    final c = color ?? context.wp.accent;
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(color: c.withValues(alpha: 0.12), shape: BoxShape.circle),
-      child: Icon(icon, color: c, size: size * 0.5, fill: 1),
-    );
-  }
+  Widget build(BuildContext context) => SizedBox(
+        width: size,
+        height: size,
+        child: Icon(icon, color: color ?? context.wp.accent, size: size * 0.6),
+      );
 }
 
 class EmptyState extends StatelessWidget {
@@ -208,7 +204,7 @@ class EmptyState extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconDisc(icon, color: context.wp.muted, size: 56),
+              IconMark(icon, color: context.wp.muted, size: 56),
               const SizedBox(height: WpSpace.l),
               Text(title, style: context.text.titleSmall, textAlign: TextAlign.center),
               const SizedBox(height: WpSpace.xs),
