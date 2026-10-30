@@ -235,7 +235,7 @@ class _StatusCard extends ConsumerWidget {
                         _Action(
                           icon: Symbols.notifications_active_rounded,
                           // Offline devices can't pick the buzz up: it waits, and can be withdrawn.
-                          label: !d.buzz ? 'Find device' : (d.status == DeviceStatus.offline ? 'Queued · cancel' : 'Buzzing…'),
+                          label: !d.buzz ? 'Find device' : (d.status == DeviceStatus.offline ? 'Cancel buzz' : 'Buzzing…'),
                           primary: true,
                           onTap: !d.buzz
                               ? () async {
@@ -373,7 +373,11 @@ class _Action extends StatelessWidget {
                 children: [
                   Icon(icon, size: 22, color: primary ? fg : (enabled ? WpColors.navy : fg)),
                   const SizedBox(height: WpSpace.xs),
-                  Text(label, style: context.text.labelMedium!.copyWith(color: fg)),
+                  // One line always: a long label shrinks instead of wrapping under the icon.
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(label, maxLines: 1, style: context.text.labelMedium!.copyWith(color: fg)),
+                  ),
                 ],
               ),
             ),
