@@ -8,14 +8,21 @@ String fmtTime(DateTime t) => _time.format(t);
 String fmtDayLong(DateTime d) => _dayLong.format(d);
 String fmtDayShort(DateTime d) => _dayShort.format(d);
 
+/// "just now", "5 min ago", "an hour ago", "3 hours ago", "yesterday", then the date.
 String fmtRelative(DateTime? t, {DateTime? now}) {
   if (t == null) return 'never';
-  final d = (now ?? DateTime.now()).difference(t);
+  final n = now ?? DateTime.now();
+  final d = n.difference(t);
   if (d.inSeconds < 45) return 'just now';
-  if (d.inMinutes < 60) return '${d.inMinutes} min ago';
-  if (d.inHours < 24) return '${d.inHours} h ago';
+  if (d.inMinutes < 60) return '${d.inMinutes < 1 ? 1 : d.inMinutes} min ago';
+  if (d.inHours < 2) return 'an hour ago';
+  if (d.inHours < 24) return '${d.inHours} hours ago';
+  if (sameDay(t, n.subtract(const Duration(days: 1)))) return 'yesterday';
   return fmtDayShort(t);
 }
+
+/// "Last seen 5 min ago" — when the device last reported in.
+String fmtLastSeen(DateTime? t, {DateTime? now}) => t == null ? 'Not seen yet' : 'Last seen ${fmtRelative(t, now: now)}';
 
 String fmtDuration(Duration d) {
   if (d.inMinutes < 1) return '${d.inSeconds} s';

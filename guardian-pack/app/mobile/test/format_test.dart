@@ -20,9 +20,18 @@ void main() {
     final now = DateTime(2026, 10, 20, 12);
     expect(fmtRelative(null), 'never');
     expect(fmtRelative(now.subtract(const Duration(seconds: 10)), now: now), 'just now');
+    expect(fmtRelative(now.subtract(const Duration(seconds: 50)), now: now), '1 min ago');
     expect(fmtRelative(now.subtract(const Duration(minutes: 5)), now: now), '5 min ago');
-    expect(fmtRelative(now.subtract(const Duration(hours: 3)), now: now), '3 h ago');
+    expect(fmtRelative(now.subtract(const Duration(minutes: 75)), now: now), 'an hour ago');
+    expect(fmtRelative(now.subtract(const Duration(hours: 3)), now: now), '3 hours ago');
+    expect(fmtRelative(DateTime(2026, 10, 19, 9), now: now), 'yesterday');
     expect(fmtRelative(DateTime(2026, 10, 18, 9), now: now), 'Sun, Oct 18');
+  });
+
+  test('last seen', () {
+    final now = DateTime(2026, 10, 20, 12);
+    expect(fmtLastSeen(null), 'Not seen yet');
+    expect(fmtLastSeen(now.subtract(const Duration(minutes: 70)), now: now), 'Last seen an hour ago');
   });
 
   test('days', () {
