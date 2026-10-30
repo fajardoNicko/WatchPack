@@ -18,11 +18,11 @@ no visible delays, must not look auto-generated.*
 | **Type** | One family: **Inter** (bundled). Sizes: 28/22/17/15/13. Weight 600 for titles, 400 body. Tabular numbers for times/speeds. |
 | **Shape** | Cards radius 16, buttons 12, chips 999. One shadow level (y2 blur8 at 6 %), nothing heavier. |
 | **Spacing** | 8-pt grid. Screen gutter 16, card padding 16, list gap 12. |
-| **Icons** | Google's **Material Symbols (rounded)** via `material_symbols_icons` — one set, variable fill/weight, actively maintained. (Phosphor was the first pick but its Flutter package is abandoned and no longer compiles.) Zone icons (home/school/park) come from the same set. |
-| **Map style** | Light grey base like the mockup (CartoDB Positron tiles). Route in red 4 px, live marker = cyan dot with navy ring and a soft pulse. |
-| **Motion** | 150–200 ms ease-out, only for state changes (sheet open, toggle, marker move). Marker glides between fixes instead of jumping. No page-transition flourishes. |
+| **Icons** | Google's **Material Symbols (outlined)** via `material_symbols_icons`, drawn at weight 300 — thin line icons, no fills, no tinted discs behind them (since 1.2; the rounded, filled icons on soft circles looked auto-generated). (Phosphor was the first pick but its Flutter package is abandoned and no longer compiles.) Zone icons (home/school/park) come from the same set. |
+| **Map style** | Light grey base like the mockup (CartoDB Positron tiles). Route in red 4 px. Live marker = the child's photo (or initials) in a white pin, "Last seen 5 min ago" under it; it pulses while moving, turns red in SOS and fades when offline. |
+| **Motion** | Only colour changes animate (an SOS card turning red). Tabs, cards and lists appear without fades or slides (removed in 1.2 — they felt jittery). The pin glides between fixes and keeps moving at the reported speed until the next one (`data/estimate.dart`). |
 | **Loading** | Never a spinner on first paint: cached last state renders instantly, then updates. Skeleton rows for lists. |
-| **Dark mode** | Same tokens re-mapped; ship it from day one (cheap in Flutter, expensive later). |
+| **Dark mode** | Same tokens re-mapped; ship it from day one (cheap in Flutter, expensive later). The accent (buttons, selected states, brand-coloured icons) is navy in light mode and cyan in dark mode — `context.wp.accent`, never `WpColors.navy` on a surface. |
 
 ## 2. Screens (from the PDF, with improvements)
 
