@@ -8,6 +8,7 @@ import '../../data/models.dart';
 import '../../data/repo.dart';
 import '../../theme/theme_mode.dart';
 import '../../theme/tokens.dart';
+import '../../util/format.dart';
 import '../motion.dart';
 import '../widgets.dart';
 import 'link_device_screen.dart';
@@ -78,9 +79,25 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ]),
           ),
+          if (device != null) ...[
+            const SectionTitle('Child'),
+            FadeSlideIn(
+              index: 3,
+              child: WpCard(
+                padding: EdgeInsets.zero,
+                child: ListTile(
+                  leading: Avatar(name: device.name, photo: device.photo, size: 44, onTap: () => _childPhoto(context, ref, device)),
+                  title: Text(device.name, style: t.bodyMedium),
+                  subtitle: Text('WatchPack ${device.id}', style: t.bodySmall),
+                  trailing: Icon(Symbols.edit_rounded, size: 18, color: context.wp.muted),
+                  onTap: () => _editChildName(context, ref, device),
+                ),
+              ),
+            ),
+          ],
           const SectionTitle('Account'),
           FadeSlideIn(
-            index: 3,
+            index: 4,
             child: WpCard(
               padding: EdgeInsets.zero,
               child: Column(children: [
@@ -111,7 +128,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: WpSpace.xl),
-          Center(child: Text('WatchPack 1.0  ·  device ${device?.id ?? '—'}', style: t.labelSmall)),
+          Center(child: Text('WatchPack 1.1  ·  device ${device?.id ?? '—'}', style: t.labelSmall)),
         ],
       ),
     );
@@ -162,7 +179,7 @@ class SettingsScreen extends ConsumerWidget {
     if (result == 'delete') {
       list.removeAt(index!);
     } else {
-      final n = name.text.trim(), p = _normalizePhone(phone.text);
+      final n = name.text.trim(), p = normalizePhPhone(phone.text);
       if (n.isEmpty || p == null) {
         if (context.mounted) showNote(context, 'Enter a name and a valid PH mobile number (+639…).');
         return;
@@ -180,13 +197,37 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
-  /// 09XXXXXXXXX or +639XXXXXXXXX → +639XXXXXXXXX; anything else → null.
-  String? _normalizePhone(String raw) {
-    final digits = raw.replaceAll(RegExp(r'[^\d+]'), '');
-    if (RegExp(r'^\+639\d{9}$').hasMatch(digits)) return digits;
-    if (RegExp(r'^09\d{9}$').hasMatch(digits)) return '+63${digits.substring(1)}';
-    if (RegExp(r'^639\d{9}$').hasMatch(digits)) return '+$digits';
-    return null;
+  Future<void> _editChildName(BuildContext context, WidgetRef ref, Device d) async {
+    if (d.id == demoDeviceId) {
+      showNote(context, 'Every new account shares the demo device, so it keeps its name.');
+      return;
+    }
+    final ctl = TextEditingController(text: d.name);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Child\'s name'),
+        content: TextField(
+          controller: ctl,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          maxLength: 24,
+          decoration: const InputDecoration(helperText: 'Shown on the map and in every alert'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Save')),
+        ],
+      ),
+    );
+    final name = ctl.text.trim();
+    if (ok == true && name.isNotEmpty && name != d.name) await ref.read(deviceActionsProvider).rename(name);
+  }
+
+  Future<void> _childPhoto(BuildContext context, WidgetRef ref, Device d) async {
+    final r = await pickAvatarSheet(context, hasPhoto: d.photo != null);
+    if (r == null) return;
+    await ref.read(deviceActionsProvider).setChildPhoto(r.isEmpty ? null : r);
   }
 
   Future<void> _editName(BuildContext context, WidgetRef ref, UserProfile p) async {

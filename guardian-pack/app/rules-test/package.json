@@ -1,0 +1,13 @@
+{
+  "name": "watchpack-rules-test",
+  "private": true,
+  "type": "module",
+  "description": "Firestore rules tests against the emulator: npm test (from app/rules-test).",
+  "scripts": {
+    "test": "cd .. && firebase emulators:exec --only firestore --project demo-watchpack \"node rules-test/test.mjs firestore.rules\""
+  },
+  "dependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "firebase": "^12.19.0"
+  }
+}

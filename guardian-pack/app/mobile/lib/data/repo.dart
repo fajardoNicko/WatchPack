@@ -126,6 +126,7 @@ class DeviceActions {
     required LatLng center,
     required double radiusM,
     required bool enabled,
+    ZoneNotify notify = ZoneNotify.both,
   }) {
     final zones = _deviceRef(_id).collection('zones');
     final doc = id == null ? zones.doc() : zones.doc(id);
@@ -136,6 +137,7 @@ class DeviceActions {
       'lng': center.longitude,
       'radiusM': radiusM.round(),
       'enabled': enabled,
+      'notify': notify.name,
     });
   }
 
@@ -151,6 +153,13 @@ class DeviceActions {
     }
     return batch.commit();
   }
+
+  /// A parent has dealt with the SOS: the red card clears for every parent until the
+  /// next press. Server time, so a wrong phone clock can't hide a later SOS (rules check it).
+  Future<void> markSafe() => _deviceRef(_id).update({'sosClearedAt': FieldValue.serverTimestamp()});
+
+  /// The child's name, shown on the map and in alert texts.
+  Future<void> rename(String name) => _deviceRef(_id).update({'name': name});
 
   /// Child's photo (data URI) or null to remove it.
   Future<void> setChildPhoto(String? dataUri) =>

@@ -39,7 +39,7 @@ class Device {
   final String? photo;                    // child's photo, base64 data URI
   final String? cmdId;                    // real devices: their command mailbox, cmdbox/{cmdId}
   final bool gpsFix;                      // false = position is the last known one
-  final DateTime? sosAt;                  // when the SOS button was last held
+  final DateTime? sosAt;                  // when SOS was last fired (double press on the button)
   final int? csq;                         // modem signal quality 0–31 (99 = unknown); real devices only
   final int battery;
   final DateTime? lastSeen;
@@ -50,20 +50,27 @@ class Device {
   final String? insideZoneId;
   final List<Contact> contacts;
 
+  /// What the app shows. An SOS stays up even if the device goes quiet (that may be
+  /// the emergency) until a parent marks it safe; a newer press shows it again.
+  /// Anything else not heard from in 15 min is offline.
+  static DeviceStatus effectiveStatus(Object? stored, {DateTime? seen, DateTime? sosAt, DateTime? sosClearedAt, DateTime? now}) {
+    var status = DeviceStatus.values.firstWhere((s) => s.name == stored, orElse: () => DeviceStatus.idle);
+    if (status == DeviceStatus.sos && sosClearedAt != null && (sosAt == null || !sosAt.isAfter(sosClearedAt))) {
+      status = DeviceStatus.idle;
+    }
+    if (status != DeviceStatus.sos && (seen == null || (now ?? DateTime.now()).difference(seen) > const Duration(minutes: 15))) {
+      status = DeviceStatus.offline;
+    }
+    return status;
+  }
+
   factory Device.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
     final m = d.data() ?? const {};
     final lat = (m['lastLat'] as num?)?.toDouble();
     final lng = (m['lastLng'] as num?)?.toDouble();
     final seen = (m['lastSeen'] as Timestamp?)?.toDate();
-    var status = DeviceStatus.values.firstWhere(
-      (s) => s.name == m['status'],
-      orElse: () => DeviceStatus.idle,
-    );
-    // Not heard from in 15 min → offline, whatever the stored status says.
-    if (status != DeviceStatus.sos &&
-        (seen == null || DateTime.now().difference(seen) > const Duration(minutes: 15))) {
-      status = DeviceStatus.offline;
-    }
+    final sosAt = (m['sosAt'] as Timestamp?)?.toDate();
+    final status = effectiveStatus(m['status'], seen: seen, sosAt: sosAt, sosClearedAt: (m['sosClearedAt'] as Timestamp?)?.toDate());
     return Device(
       id: d.id,
       name: (m['name'] as String?) ?? 'Device',
@@ -77,7 +84,7 @@ class Device {
       photo: m['photo'] as String?,
       cmdId: m['cmdId'] as String?,
       gpsFix: m['gpsFix'] != false,
-      sosAt: (m['sosAt'] as Timestamp?)?.toDate(),
+      sosAt: sosAt,
       csq: (m['csq'] as num?)?.toInt(),
       contacts: [
         for (final c in (m['contacts'] as List?) ?? const [])
@@ -103,7 +110,34 @@ class Fix {
   }
 }
 
-enum ZoneType { home, school, park, other }
+/// Kinds of registered places. Stored by name, so only ever add to this list.
+enum ZoneType {
+  home('Home', 'Home Zone', 'Home'),
+  school('School', 'School Zone', 'e.g. Malinta Elementary'),
+  friend('Friend', 'Friend\'s House', 'e.g. Mia\'s house'),
+  family('Family', 'Relative\'s House', 'e.g. Lola\'s house'),
+  tutor('Tutor', 'Tutor', 'e.g. Kumon, review center'),
+  sports('Sports', 'Practice', 'e.g. swimming, football'),
+  church('Church', 'Church', 'e.g. parish, chapel'),
+  park('Park', 'Park Zone', 'e.g. plaza, playground'),
+  terminal('Terminal', 'Terminal', 'e.g. jeepney or bus stop'),
+  other('Other', 'Safety Zone', 'Any place you want alerts for');
+
+  const ZoneType(this.label, this.defaultName, this.example);
+  final String label, defaultName, example;
+}
+
+/// Which crossings of a zone push an alert. Stored as `notify`; missing = both.
+enum ZoneNotify {
+  both('Both'),
+  arrive('Arrivals'),
+  leave('Departures');
+
+  const ZoneNotify(this.label);
+  final String label;
+
+  static ZoneNotify parse(Object? v) => values.firstWhere((n) => n.name == v, orElse: () => both);
+}
 
 class Zone {
   const Zone({
@@ -113,12 +147,14 @@ class Zone {
     required this.center,
     required this.radiusM,
     required this.enabled,
+    this.notify = ZoneNotify.both,
   });
   final String id, name;
   final ZoneType type;
   final LatLng center;
   final double radiusM;
   final bool enabled;
+  final ZoneNotify notify;
 
   factory Zone.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
     final m = d.data()!;
@@ -129,6 +165,7 @@ class Zone {
       center: LatLng((m['lat'] as num).toDouble(), (m['lng'] as num).toDouble()),
       radiusM: (m['radiusM'] as num?)?.toDouble() ?? 200,
       enabled: m['enabled'] != false,
+      notify: ZoneNotify.parse(m['notify']),
     );
   }
 }

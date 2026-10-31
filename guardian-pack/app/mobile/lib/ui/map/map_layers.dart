@@ -4,22 +4,26 @@ import 'package:latlong2/latlong.dart';
 
 import '../../data/models.dart';
 import '../../theme/tokens.dart';
+import '../widgets.dart';
 
 /// Shared map pieces so the Map Pin and Trip History maps look identical.
 
 /// OpenStreetMap raster tiles (no API key), recoloured on-device: desaturated and
 /// lifted for the light theme so it reads like the grey map in the mockup, inverted
 /// and dimmed for dark mode. Tiles are cached by flutter_map in memory.
-TileLayer baseTiles(BuildContext context) {
+Widget baseTiles(BuildContext context) {
   final dark = Theme.of(context).brightness == Brightness.dark;
-  return TileLayer(
-    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    userAgentPackageName: 'ph.watchpack.app',
-    maxNativeZoom: 19,
-    maxZoom: 20,
-    tileBuilder: (context, tileWidget, tile) => ColorFiltered(
-      colorFilter: ColorFilter.matrix(dark ? _darkMatrix : _lightMatrix),
-      child: tileWidget,
+  // One colour filter over the whole layer (a single offscreen pass per frame),
+  // not one per tile — hundreds of per-tile filters made panning stutter.
+  return ColorFiltered(
+    colorFilter: ColorFilter.matrix(dark ? _darkMatrix : _lightMatrix),
+    child: TileLayer(
+      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      userAgentPackageName: 'ph.watchpack.app',
+      maxNativeZoom: 19,
+      maxZoom: 20,
+      keepBuffer: 3,
+      panBuffer: 1,
     ),
   );
 }
@@ -57,6 +61,29 @@ CircleLayer zoneLayer(List<Zone> zones) => CircleLayer(circles: [
           borderStrokeWidth: 1.5,
         ),
     ]);
+
+/// The place's icon at each zone centre, so home, school, a friend's house… read at a glance.
+MarkerLayer zonePins(List<Zone> zones) => MarkerLayer(markers: [
+      for (final z in zones.where((z) => z.enabled))
+        Marker(point: z.center, width: 30, height: 30, child: _ZonePin(z)),
+    ]);
+
+class _ZonePin extends StatelessWidget {
+  const _ZonePin(this.z);
+  final Zone z;
+  @override
+  Widget build(BuildContext context) => Tooltip(
+        message: z.name,
+        child: Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: context.wp.card,
+            border: Border.all(color: WpColors.cyan, width: 2),
+          ),
+          child: Icon(zoneIcon(z.type), size: 16, fill: 1, color: WpColors.navy),
+        ),
+      );
+}
 
 PolylineLayer trailLayer(List<LatLng> points, {Color color = WpColors.red}) => PolylineLayer(polylines: [
       Polyline(points: points, color: color, strokeWidth: 4, strokeCap: StrokeCap.round, strokeJoin: StrokeJoin.round),

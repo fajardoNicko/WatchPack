@@ -81,16 +81,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               baseTiles(context),
               zoneLayer(zones.value ?? const []),
               if (trail.length > 1) trailLayer(trail),
+              zonePins(zones.value ?? const []),
               quakeLayer(context, quakes.value ?? const []),
               if (pos != null)
-                MarkerLayer(markers: [
-                  Marker(
-                    point: pos,
-                    width: 44,
-                    height: 44,
-                    child: LiveMarker(status: device.value?.status ?? DeviceStatus.offline),
-                  ),
-                ]),
+                // Glides from the last fix to the new one instead of jumping. Keyed by
+                // device so switching children doesn't slide across the city.
+                TweenAnimationBuilder<LatLng>(
+                  key: ValueKey(device.value?.id),
+                  tween: _LatLngTween(end: pos),
+                  duration: const Duration(milliseconds: 900),
+                  curve: Curves.easeInOut,
+                  builder: (_, p, marker) => MarkerLayer(markers: [Marker(point: p, width: 44, height: 44, child: marker!)]),
+                  child: LiveMarker(status: device.value?.status ?? DeviceStatus.offline),
+                ),
               attribution(),
             ],
           ),
@@ -109,6 +112,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ),
     );
   }
+}
+
+class _LatLngTween extends Tween<LatLng> {
+  _LatLngTween({super.end});
+  @override
+  LatLng lerp(double t) => LatLng(
+        begin!.latitude + (end!.latitude - begin!.latitude) * t,
+        begin!.longitude + (end!.longitude - begin!.longitude) * t,
+      );
 }
 
 class _StatusCard extends ConsumerWidget {
@@ -223,7 +235,7 @@ class _StatusCard extends ConsumerWidget {
                         _Action(
                           icon: Symbols.notifications_active_rounded,
                           // Offline devices can't pick the buzz up: it waits, and can be withdrawn.
-                          label: !d.buzz ? 'Find device' : (d.status == DeviceStatus.offline ? 'Queued · cancel' : 'Buzzing…'),
+                          label: !d.buzz ? 'Find device' : (d.status == DeviceStatus.offline ? 'Cancel buzz' : 'Buzzing…'),
                           primary: true,
                           onTap: !d.buzz
                               ? () async {
@@ -241,6 +253,14 @@ class _StatusCard extends ConsumerWidget {
                         _Action(icon: Symbols.share_rounded, label: 'Share', onTap: d.position == null ? null : () => _share(d)),
                       ],
               ),
+              if (sos)
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () => _markSafe(context, ref, d),
+                    icon: const Icon(Symbols.verified_user_rounded, size: 18),
+                    label: Text('Mark ${d.name} as safe'),
+                  ),
+                ),
             ],
           );
         },
@@ -261,6 +281,26 @@ class _StatusCard extends ConsumerWidget {
   static Future<void> _open(BuildContext context, Uri uri) async {
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && context.mounted) {
       showNote(context, 'No app on this phone can open that.');
+    }
+  }
+
+  Future<void> _markSafe(BuildContext context, WidgetRef ref, Device d) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text('Mark ${d.name} as safe?'),
+        content: Text('The SOS card clears for every parent. If ${d.name} presses SOS again, it comes back.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Mark as safe')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await ref.read(deviceActionsProvider).markSafe();
+    } catch (e) {
+      if (context.mounted) showNote(context, 'Could not clear the SOS: $e');
     }
   }
 
@@ -333,7 +373,11 @@ class _Action extends StatelessWidget {
                 children: [
                   Icon(icon, size: 22, color: primary ? fg : (enabled ? WpColors.navy : fg)),
                   const SizedBox(height: WpSpace.xs),
-                  Text(label, style: context.text.labelMedium!.copyWith(color: fg)),
+                  // One line always: a long label shrinks instead of wrapping under the icon.
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(label, maxLines: 1, style: context.text.labelMedium!.copyWith(color: fg)),
+                  ),
                 ],
               ),
             ),

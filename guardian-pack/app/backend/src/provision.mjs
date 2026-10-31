@@ -8,6 +8,7 @@ import { randomBytes, randomInt } from "node:crypto";
 import { readFileSync, existsSync } from "node:fs";
 import { initializeApp, cert, applicationDefault } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { writeSticker } from "./sticker.mjs";
 
 const keyPath = new URL("../serviceAccount.json", import.meta.url);
 initializeApp({ credential: existsSync(keyPath) ? cert(JSON.parse(readFileSync(keyPath))) : applicationDefault() });
@@ -53,4 +54,5 @@ console.log(`\ndevice ${deviceId} ready. firmware/include/secrets.h:\n`);
 console.log(`#define DEVICE_ID     "${deviceId}"`);
 console.log(`#define DEVICE_SECRET "${secret}"`);
 console.log(`\npairing code (sticker): ${pairCode.slice(0, 4)}-${pairCode.slice(4)}`);
+console.log(`printable sticker with QR: ${(await writeSticker(pairCode, deviceId)).pathname}`);
 process.exit(0);

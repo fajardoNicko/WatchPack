@@ -29,6 +29,10 @@ locations and alerts are read-only for the app. Redeploy with `firebase deploy -
   Device linking. Linking, the member entry and using up the invite are one batch write.
 - The device id alone is no longer enough to link. The demo device `wp-demo-ivy` is the only
   exception (every new account starts on it; "Look around with the demo device").
+- Both codes can be scanned as a QR (`WATCHPACK:<code>`): the sticker's from `npm run sticker`, an
+  invite's from the invite sheet.
+- Any parent can remove another (`devices/{id}/removed/{uid}`); the rules then refuse that parent
+  until they link again with a code, and the watcher stops pushing to them.
 - Security & privacy: change password, unlink a device, delete the account.
 - Family contacts edited in the app are mirrored to the device's mailbox
   (`cmdbox/<secret>.contacts`); the `05_cloud` firmware texts those numbers on SOS and falls
@@ -62,6 +66,30 @@ Node + Firebase Admin SDK, no Cloud Functions needed (so no Blaze plan yet).
   `secrets.h` lines and the pairing code.
 Needs `backend/serviceAccount.json` (Firebase console → Project settings → Service accounts →
 Generate new private key). Git-ignored. Run it on the laptop or as a scheduled task / GitHub Action.
+
+## Status (2026-10-22)
+Added: **QR pairing** (scan the sticker or another parent's invite; `npm run provision` / `npm run sticker
+-- <CODE> <deviceId>` writes a printable 40 × 50 mm SVG to `backend/stickers/`, git-ignored),
+**remove another parent** (Parental account → remove; they lose access at once, their app unlinks
+itself, pushes stop; a new invite or the sticker code brings them back), **more kinds of places**
+(home, school, friend's house, family, tutor, sports, church, park, terminal, other) with icons on
+the maps, rename the child in Settings, marker glides between fixes, cheaper map recolouring.
+Tests: `flutter test` (18 unit tests) and `cd rules-test && npm install && npm test` (71 rules cases
+on the emulator; Java = Android Studio's JBR in `JAVA_HOME`).
+Rules deployed and **1.1** installed on the phone 2026-10-24. Also in 1.1: each place alerts on
+arrivals, departures or both (zone `notify`, respected by the watcher).
+
+## Release builds
+`flutter build apk --release` signs with `android/key.properties` if it exists (git-ignored):
+```
+storeFile=watchpack-release.jks
+storePassword=…
+keyAlias=watchpack
+keyPassword=…
+```
+Make the key once with `keytool -genkey -v -keystore android/watchpack-release.jks -keyalg RSA
+-keysize 2048 -validity 10000 -alias watchpack` and keep a copy somewhere safe — updates must be
+signed with the same key. Without it, release builds use the debug key.
 
 ## Status (2026-10-18)
 Feature-complete for the demo. Added: pairing / invite codes, Parental account (parents list,

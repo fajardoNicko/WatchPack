@@ -14,12 +14,13 @@ TinyGPSPlus gps;
 // Satellites IN VIEW (before any fix) and the strongest signal, from the GSV sentences.
 // Tells "antenna hears nothing" apart from "still searching".
 TinyGPSCustom gpsInView(gps, "GPGSV", 3);
-TinyGPSCustom bdInView(gps, "GBGSV", 3);     // L76K labels BeiDou "GB", not "BD"
+TinyGPSCustom bdInView(gps, "BDGSV", 3);     // this L76K (URANUS5 V5.3) says "BD" for BeiDou
 TinyGPSCustom glInView(gps, "GLGSV", 3);
 // Every satellite's SNR from the GSV sentences (4 per sentence). A fix needs ≥4 sats
 // above ~25 dB; one strong one and three weak ones never locks.
 TinyGPSCustom gSnr[4] = {{gps, "GPGSV", 7}, {gps, "GPGSV", 11}, {gps, "GPGSV", 15}, {gps, "GPGSV", 19}};
-TinyGPSCustom bSnr[4] = {{gps, "GBGSV", 7}, {gps, "GBGSV", 11}, {gps, "GBGSV", 15}, {gps, "GBGSV", 19}};
+TinyGPSCustom bSnr[4] = {{gps, "BDGSV", 7}, {gps, "BDGSV", 11}, {gps, "BDGSV", 15}, {gps, "BDGSV", 19}};
+TinyGPSCustom rSnr[4] = {{gps, "GLGSV", 7}, {gps, "GLGSV", 11}, {gps, "GLGSV", 15}, {gps, "GLGSV", 19}};
 int usable = 0, bestSnr = 0;
 static void tally(TinyGPSCustom* arr) {
     for (int i = 0; i < 4; i++) {
@@ -42,7 +43,9 @@ void setup() {
     delay(300);
     Serial.println("\nGuardian Pack — 02_gps_l76k");
     SerialGPS.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
-    Serial.printf("listening on RX=%d TX=%d @ %d baud. Raw NMEA for 15 s, then a summary each second.\n",
+    delay(500);
+    gpsUseAllSystems(SerialGPS);
+    Serial.printf("listening on RX=%d TX=%d @ %d baud, GPS + BeiDou + GLONASS. Raw NMEA for 15 s, then a summary each second.\n",
                   GPS_RX_PIN, GPS_TX_PIN, GPS_BAUD);
     rawUntil = millis() + 15000;
 }
@@ -52,7 +55,7 @@ void loop() {
         const char c = SerialGPS.read();
         bytesSeen++;
         if (millis() < rawUntil) Serial.write(c);
-        if (gps.encode(c)) { tally(gSnr); tally(bSnr); }   // a sentence just completed
+        if (gps.encode(c)) { tally(gSnr); tally(bSnr); tally(rSnr); }   // a sentence just completed
     }
 
     if (millis() - lastReport >= 1000 && millis() >= rawUntil) {

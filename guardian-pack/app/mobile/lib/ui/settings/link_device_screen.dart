@@ -9,6 +9,7 @@ import '../../data/linking.dart';
 import '../../data/repo.dart';
 import '../../theme/tokens.dart';
 import '../widgets.dart';
+import 'scan_code_screen.dart';
 
 /// Shown instead of the tabs when the parent has no device on their profile.
 class LinkDeviceScreen extends ConsumerWidget {
@@ -35,13 +36,22 @@ class LinkDeviceScreen extends ConsumerWidget {
               const SizedBox(height: WpSpace.l),
               Text('Link your child\'s WatchPack', style: t.titleLarge, textAlign: TextAlign.center),
               const SizedBox(height: WpSpace.s),
-              Text('Enter the pairing code on the WatchPack\'s sticker, or an invite code from another parent.',
+              Text('Scan the QR code on the WatchPack\'s sticker or another parent\'s invite, or type the code.',
                   style: t.bodySmall, textAlign: TextAlign.center),
               const SizedBox(height: WpSpace.xl),
               FilledButton.icon(
+                onPressed: () async {
+                  final code = await ScanCodeScreen.open(context);
+                  if (code != null && context.mounted) await _link(context, ref, code);
+                },
+                icon: const Icon(Symbols.qr_code_scanner_rounded),
+                label: const Text('Scan QR code'),
+              ),
+              const SizedBox(height: WpSpace.s),
+              OutlinedButton.icon(
                 onPressed: () => showLinkDeviceDialog(context, ref),
-                icon: const Icon(Symbols.link_rounded),
-                label: const Text('Enter a code'),
+                icon: const Icon(Symbols.keyboard_rounded),
+                label: const Text('Type a code'),
               ),
               const SizedBox(height: WpSpace.s),
               TextButton(
@@ -95,6 +105,11 @@ class _CodeDialogState extends State<_CodeDialog> {
     super.dispose();
   }
 
+  Future<void> _scan() async {
+    final code = await ScanCodeScreen.open(context);
+    if (code != null && mounted) Navigator.pop(context, code);
+  }
+
   void _submit() {
     final raw = _ctl.text.trim();
     if (raw.toLowerCase() == demoDeviceId || normalizeCode(raw) != null) {
@@ -121,12 +136,17 @@ class _CodeDialogState extends State<_CodeDialog> {
               TextInputFormatter.withFunction((_, v) => v.text.startsWith(RegExp('wp', caseSensitive: false)) ? v : v.copyWith(text: v.text.toUpperCase())),
             ],
             style: const TextStyle(fontFamily: 'Inter', fontSize: 22, fontWeight: FontWeight.w600, letterSpacing: 2),
-            decoration: InputDecoration(labelText: 'Pairing or invite code', hintText: 'XXXX-XXXX', errorText: _error),
+            decoration: InputDecoration(
+              labelText: 'Pairing or invite code',
+              hintText: 'XXXX-XXXX',
+              errorText: _error,
+              suffixIcon: IconButton(tooltip: 'Scan QR code', onPressed: _scan, icon: const Icon(Symbols.qr_code_scanner_rounded)),
+            ),
             onChanged: (_) { if (_error != null) setState(() => _error = null); },
             onSubmitted: (_) => _submit(),
           ),
           const SizedBox(height: WpSpace.s),
-          Text('The pairing code is on the sticker inside the WatchPack. Invite codes last 48 hours.',
+          Text('The pairing code and its QR are on the sticker inside the WatchPack. Invite codes last 48 hours.',
               style: context.text.bodySmall),
         ]),
         actions: [

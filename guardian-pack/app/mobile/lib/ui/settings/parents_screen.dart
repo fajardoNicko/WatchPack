@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../auth/auth.dart';
@@ -62,7 +63,13 @@ class ParentsScreen extends ConsumerWidget {
                         leading: Avatar(name: m.name, photo: m.photo, size: 40),
                         title: Text(m.name.isEmpty ? m.email : m.name, style: t.bodyMedium),
                         subtitle: Text(m.email, style: t.bodySmall),
-                        trailing: m.uid == me ? const _Chip('You') : null,
+                        trailing: m.uid == me
+                            ? const _Chip('You')
+                            : IconButton(
+                                tooltip: 'Remove',
+                                onPressed: () => _remove(context, ref, deviceId!, m, name),
+                                icon: Icon(Symbols.person_remove_rounded, color: context.wp.muted, size: 20),
+                              ),
                       ),
                     ),
                   ],
@@ -74,7 +81,7 @@ class ParentsScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: WpSpace.xs),
               child: Text('Every parent here sees the live location, history and alerts, and gets the same push notifications. '
-                  'Each parent can leave from Security & privacy on their own phone.', style: t.bodySmall),
+                  'Each parent can leave from Security & privacy on their own phone, or be removed here.', style: t.bodySmall),
             ),
             const SizedBox(height: WpSpace.xl),
             _InviteButton(onPressed: deviceId == null ? null : () => _invite(context, ref, deviceId, name)),
@@ -86,6 +93,7 @@ class ParentsScreen extends ConsumerWidget {
                   for (final (i, inv) in invites.indexed) ...[
                     if (i > 0) Divider(color: context.wp.line),
                     ListTile(
+                      onTap: inv.expired ? null : () => _showInvite(context, inv, name),
                       leading: IconDisc(Symbols.key_rounded, color: inv.expired ? context.wp.muted : WpColors.navy),
                       title: Text(fmtCode(inv.code), style: t.bodyMedium!.copyWith(fontFeatures: const [FontFeature.tabularFigures()], letterSpacing: 1)),
                       subtitle: Text(inv.expired ? 'Expired' : 'Until ${_until(inv.expiresAt)}', style: t.bodySmall),
@@ -109,6 +117,29 @@ class ParentsScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _remove(BuildContext context, WidgetRef ref, String deviceId, Member m, String child) async {
+    final who = m.name.isEmpty ? m.email : m.name;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text('Remove $who?'),
+        content: Text('$who stops seeing $child\'s location, history and alerts right away. '
+            'To come back they need a new invite, or the pairing code on the WatchPack\'s sticker.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+          FilledButton(style: FilledButton.styleFrom(backgroundColor: WpColors.red), onPressed: () => Navigator.pop(c, true), child: const Text('Remove')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await ref.read(linkActionsProvider).removeParent(deviceId, m);
+      if (context.mounted) showNote(context, '$who removed.');
+    } catch (e) {
+      if (context.mounted) showNote(context, 'Could not remove $who: $e');
+    }
+  }
+
   Future<void> _invite(BuildContext context, WidgetRef ref, String deviceId, String name) async {
     try {
       final inv = await ref.read(linkActionsProvider).createInvite(deviceId);
@@ -121,6 +152,7 @@ class ParentsScreen extends ConsumerWidget {
   Future<void> _showInvite(BuildContext context, Invite inv, String name) => showModalBottomSheet<void>(
         context: context,
         showDragHandle: true,
+        isScrollControlled: true,
         builder: (c) {
           final t = c.text;
           return SafeArea(
@@ -129,6 +161,21 @@ class ParentsScreen extends ConsumerWidget {
               child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Text('Invite code', style: t.titleMedium, textAlign: TextAlign.center),
                 const SizedBox(height: WpSpace.l),
+                // White in dark mode too: scanners want dark modules on a light ground.
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(WpSpace.m),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(WpRadius.card)),
+                    child: QrImageView(
+                      data: qrPayload(inv.code),
+                      size: 160,
+                      padding: EdgeInsets.zero,
+                      eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: WpColors.navy),
+                      dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: WpColors.navy),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: WpSpace.m),
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: WpSpace.l),
                   decoration: BoxDecoration(color: WpColors.cyanSoft, borderRadius: BorderRadius.circular(WpRadius.card)),
@@ -137,7 +184,7 @@ class ParentsScreen extends ConsumerWidget {
                       style: const TextStyle(fontFamily: 'Inter', fontSize: 32, fontWeight: FontWeight.w700, letterSpacing: 4, color: WpColors.navy)),
                 ),
                 const SizedBox(height: WpSpace.m),
-                Text('The other parent signs up in WatchPack, then enters this code under Settings → Device linking. '
+                Text('The other parent signs up in WatchPack, then scans this or types the code under Settings → Device linking. '
                     'Works once, until ${_until(inv.expiresAt)}.', style: t.bodySmall, textAlign: TextAlign.center),
                 const SizedBox(height: WpSpace.xl),
                 Row(children: [

@@ -31,6 +31,15 @@ String? normalizeCode(String raw) {
   return RegExp('^[$_alphabet]{8}\$').hasMatch(s) ? s : null;
 }
 
+/// What the QR on the sticker (backend/src/sticker.mjs) and on invite screens holds.
+String qrPayload(String code) => 'WATCHPACK:$code';
+
+/// A scanned QR → its code, or null if it isn't a WatchPack code. A bare code works too.
+String? codeFromScan(String raw) {
+  final m = RegExp(r'^\s*watchpack:(.+)$', caseSensitive: false).firstMatch(raw);
+  return normalizeCode(m?.group(1) ?? raw);
+}
+
 String fmtCode(String code) => code.length == 8 ? '${code.substring(0, 4)}-${code.substring(4)}' : code;
 
 class LinkError implements Exception {
@@ -95,6 +104,16 @@ final myInvitesProvider = StreamProvider<List<Invite>>((ref) {
           ]..sort((a, b) => b.expiresAt.compareTo(a.expiresAt)));
 });
 
+/// Who removed me from [deviceId] (their name), or null while I'm still a parent there.
+/// devices/{id}/removed/{uid} — written by the parent who removed me.
+final removalProvider = StreamProvider.family<String?, String>((ref, deviceId) {
+  final uid = ref.watch(authStateProvider).value?.uid;
+  if (uid == null || deviceId == demoDeviceId) return Stream.value(null);
+  return _db.collection('devices').doc(deviceId).collection('removed').doc(uid).snapshots().map(
+        (d) => d.exists ? ((d.data()?['byName'] as String?)?.trim().isNotEmpty == true ? d.data()!['byName'] as String : 'Another parent') : null,
+      );
+});
+
 /// Keeps my members entry on the selected device current (name, photo). Watched by
 /// Settings, so parents who linked before members existed show up too.
 final memberSyncProvider = FutureProvider<void>((ref) async {
@@ -117,6 +136,9 @@ class LinkActions {
   DocumentReference<Map<String, dynamic>> _member(String deviceId, String uid) =>
       _db.collection('devices').doc(deviceId).collection('members').doc(uid);
 
+  DocumentReference<Map<String, dynamic>> _removed(String deviceId, String uid) =>
+      _db.collection('devices').doc(deviceId).collection('removed').doc(uid);
+
   /// Links the device behind a pairing or invite code and switches the app to it.
   /// Returns the device id.
   Future<String> linkWithCode(String raw) async {
@@ -136,8 +158,8 @@ class LinkActions {
     return _link(me, deviceId, code, retireInvite: m['kind'] == 'invite' ? snap.reference : null);
   }
 
-  /// One atomic write: the device on my profile, me on its member list, and the
-  /// invite used up (the rules check each against the batch's result).
+  /// One atomic write: the device on my profile, me on its member list, any earlier
+  /// removal lifted, and the invite used up (the rules check each against the batch's result).
   Future<String> _link(UserProfile me, String deviceId, String? code, {DocumentReference? retireInvite}) async {
     if (!me.deviceIds.contains(deviceId)) {
       final batch = _db.batch()
@@ -145,7 +167,11 @@ class LinkActions {
           'deviceIds': FieldValue.arrayUnion([deviceId]),
           'linkCode': ?code,
         }, SetOptions(merge: true));
-      if (deviceId != demoDeviceId) batch.set(_member(deviceId, me.uid), _memberFields(me, joined: true));
+      if (deviceId != demoDeviceId) {
+        batch
+          ..set(_member(deviceId, me.uid), _memberFields(me, joined: true))
+          ..delete(_removed(deviceId, me.uid));
+      }
       if (retireInvite != null) batch.delete(retireInvite);
       await batch.commit();
     }
@@ -160,6 +186,16 @@ class LinkActions {
     if (_ref.read(selectedDeviceProvider) == deviceId) _ref.read(selectedDeviceProvider.notifier).clear();
     final batch = _db.batch()..update(_db.collection('users').doc(me.uid), {'deviceIds': FieldValue.arrayRemove([deviceId])});
     if (deviceId != demoDeviceId) batch.delete(_member(deviceId, me.uid));
+    return batch.commit();
+  }
+
+  /// Takes another parent off [deviceId]: they lose access at once, stop getting its
+  /// alerts, and need a code to come back. Their app notices and unlinks itself.
+  Future<void> removeParent(String deviceId, Member m) {
+    final me = _me;
+    final batch = _db.batch()
+      ..set(_removed(deviceId, m.uid), {'by': me.uid, 'byName': me.displayName, 'at': FieldValue.serverTimestamp()})
+      ..delete(_member(deviceId, m.uid));
     return batch.commit();
   }
 

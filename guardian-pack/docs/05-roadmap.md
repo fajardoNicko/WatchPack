@@ -24,15 +24,15 @@
 - [x] D1–D3 locked (ESP32 + 4G/GPS module + Firebase/Flutter)
 - [x] Parts arrived (2026-10-05): LilyGO T-A7670G + L76K V1.4, antennas, 18650, NC button, active buzzer, jumpers
 - [x] Buzzer rated voltage confirmed: **5 V** (MakerLab MLE08216) → needs NPN driver from V_BAT
-- [ ] Buy: NPN transistor (S8050 / 2N2222A, TO-92) + 1 kΩ resistor + heat-shrink
+- [x] Buy: NPN transistor + 1 kΩ resistor — BC337-25 used (2026-10-11)
 - [x] Wiring verified against the LilyGO V1.4 schematic → [`lilygo-wiring.html`](lilygo-wiring.html)
 - [x] Toolchain: CH9102 driver + VS Code PlatformIO (2026-10-06, board on COM9)
 - [x] `00_hello_board` — upload works, serial monitor, IO0 + battery voltage (2026-10-06)
 - [x] `01_modem_at` — modem on, SIM ready, registered on LTE (2026-10-08: Smart, CSQ 24/31; needs a 1000 ms PWRKEY pulse, not LilyGO's 100 ms)
-- [x] `02_gps_l76k` — L76K talks (NMEA @ 9600, ~1000 valid sentences/100 s, 2026-10-08); antenna proven (4 GPS sats, 30 dB, outdoors 2026-10-09 evening) — **no fix yet**: needs a daytime try in truly open sky, antenna ≥30 cm from the board/battery
+- [x] `02_gps_l76k` — L76K talks (NMEA @ 9600, 2026-10-08); **first fix 2026-10-18** once BeiDou was switched on (`$PCAS04,7`), 23 sats, hdop 0.6
 - [x] `03_sms_send` — IO0 press → SMS accepted by the network (`+CMGS`, 2026-10-08 20:33, Smart); contacts live in git-ignored `include/secrets.h`
 - [x] Phase 2 wiring: header pins, SOS button (IO32) + buzzer driver (IO18, V_BAT) → `04_pins_test` passes (2026-10-18)
-- [ ] `05_cloud` — device writes location/battery/signal to Firestore, Find device, SOS (built; field test with a GPS fix + SMS pending)
+- [ ] `05_cloud` — device writes location/battery/signal to Firestore, Find device, SOS (built, flashed 2026-10-22; field test pending — on 10-22 the SOS button fired correctly on the bench; the SIM wasn't in yet, so texts and posts waited)
 - [x] Backend stores location; app map shows the marker moving
 - [x] Find device — app → `cmdbox` mailbox → device buzzes (folded into `05_cloud`)
 
@@ -43,6 +43,8 @@
 - [x] Push notifications — FCM from the laptop watcher (`npm run watch`), no Blaze plan needed
 - [x] Contact editing (synced to the device's SOS list), second-parent invites, pairing codes (2026-10-18)
 - [x] Security & privacy, unlink, delete account (2026-10-18)
+- [x] QR pairing + printable sticker, remove another parent, more kinds of places (friend's house, family, tutor, …), unit + rules tests (2026-10-22)
+- [ ] Deploy the 10-22 rules, then install and check the new build on the phone
 
 ### Phase 2 — Smart features
 - [x] Zones (home, school, …) → arrive/leave push, once per crossing
@@ -76,5 +78,5 @@
 ## Parking lot (ideas for later)
 - BLE proximity "find device" when phone is near (ESP32) — no cellular needed.
 - Fall/impact detection (add an accelerometer) → auto-alert.
-- Geofence multiple places (home, school, tutor) with per-place notifications.
+- ~~Geofence multiple places (home, school, tutor)~~ — done; per-place "arrivals only" option still open.
 - Speed/route history + "left an unexpected area" alert.

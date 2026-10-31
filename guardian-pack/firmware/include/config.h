@@ -33,7 +33,9 @@
 #define BUZZER_PIN           18   // NPN base via 1 kΩ: HIGH = beep
 
 // ---- Behaviour ----
-#define SOS_HOLD_MS        2000   // hold time before an SOS fires (bump protection)
+#define SOS_DOUBLE_MS       600   // SOS = two presses, the 2nd starting within this of the 1st
+#define BUTTON_DEBOUNCE_MS   40   // a press, and the gap between presses, must last this long
+#define SOS_HOLD_MS        2000   // 03_sms_send's IO0 test only (hold to send)
 #define SERIAL_BAUD      115200
 
 // ---- Cloud ----

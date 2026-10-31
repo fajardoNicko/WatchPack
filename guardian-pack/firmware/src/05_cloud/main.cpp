@@ -2,8 +2,9 @@
 //   every 30 s (10 s in SOS) → position, battery, signal to Firestore over LTE/HTTPS
 //   every 10 s               → reads its command mailbox: "Find device" → buzzer 15 s,
 //                              and the family contacts edited in the app
-//   SOS button held 2 s      → SMS to every contact first, then the app goes red (10 min)
-//   short press while buzzing → stops the buzzer
+//   SOS button pressed twice → SMS to every contact first, then the app goes red (10 min)
+//   (the 2nd press within 0.6 s of the 1st; fires on the 2nd press, no holding)
+//   one press while buzzing  → stops the buzzer
 // Talks to Firestore's REST API directly, no Cloud Functions. Each write carries
 // DEVICE_SECRET, which the security rules check — app/firestore.rules, provision.mjs.
 // IO0 works as a second SOS button. The SOS input is ignored until it has read idle once,
@@ -54,8 +55,10 @@ static std::vector<String> sosNumbers() {
 }
 
 // ---------- background work: GPS, button, buzzer (runs inside every wait) ----------
-bool sosWired = false, btnDown = false, sosFiredThisPress = false, sosRequested = false;
-uint32_t btnSince = 0, buzzUntil = 0, toneUntil = 0;
+// A level only counts once it has been steady for BUTTON_DEBOUNCE_MS, so contact bounce
+// can't pass for a double press. Holding the button, or a wire stuck open, never fires.
+bool sosWired = false, rawDown = false, btnDown = false, sosRequested = false;
+uint32_t rawSince = 0, firstPressAt = 0, buzzUntil = 0, toneUntil = 0;
 
 static void service() {
     while (SerialGPS.available()) gps.encode(SerialGPS.read());
@@ -63,15 +66,18 @@ static void service() {
     const bool sosPin = digitalRead(SOS_BUTTON_PIN) == SOS_PRESSED_LEVEL;
     if (!sosPin) sosWired = true;
     const bool down = (sosWired && sosPin) || digitalRead(BOOT_BUTTON_PIN) == LOW;
-    if (down && !btnDown) { btnDown = true; btnSince = millis(); }
-    if (!down && btnDown) {
-        btnDown = false;
-        if (!sosFiredThisPress && buzzUntil) buzzUntil = 0;     // short press = "found it"
-        sosFiredThisPress = false;
-    }
-    if (btnDown && !sosFiredThisPress && millis() - btnSince >= SOS_HOLD_MS) {
-        sosFiredThisPress = true;
-        sosRequested = true;
+    if (down != rawDown) { rawDown = down; rawSince = millis(); }
+    if (rawDown != btnDown && millis() - rawSince >= BUTTON_DEBOUNCE_MS) {
+        btnDown = rawDown;
+        if (btnDown && firstPressAt && millis() - firstPressAt <= SOS_DOUBLE_MS) {
+            firstPressAt = 0;                           // second press: SOS now
+            sosRequested = true;
+            toneUntil = millis() + 250;                 // instant "got it" chirp, network or not
+            Serial.printf("\n[%4lu s] double press → SOS requested\n", millis() / 1000);
+        } else if (btnDown) {
+            firstPressAt = millis();
+            if (buzzUntil) buzzUntil = 0;               // one press = "found it"
+        }
     }
 
     bool on = (int32_t)(toneUntil - millis()) > 0;
@@ -176,7 +182,14 @@ static bool sendSms(const char* number, const String& text) {
 // a 7xx modem error, or < 0 if the AT exchange broke. `out` gets the body (GET only).
 static int http(int method, const String& url, const String& body, String* out = nullptr) {
     at("AT+HTTPTERM", 2000);
-    if (at("AT+HTTPINIT", 5000).indexOf("OK") < 0) return -1;
+    // Straight after the previous request the HTTP stack can still be closing and
+    // refuses HTTPINIT; seen as every poll failing right after a post in SOS mode.
+    bool ready = false;
+    for (int i = 0; i < 3 && !ready; i++) {
+        if (i) wait(500);
+        ready = at("AT+HTTPINIT", 5000).indexOf("OK") >= 0;
+    }
+    if (!ready) return -1;
     at("AT+HTTPPARA=\"URL\",\"" + url + "\"");
     at("AT+HTTPPARA=\"SSLCFG\",0");
     if (method == 1) {
@@ -220,6 +233,7 @@ static int batteryPct() {
 // ---------- device state ----------
 uint32_t sosSince = 0;
 bool sosStampPending = false, clearDeviceBuzz = false, buzzWasOn = false;
+bool sosNeedsFix = false;               // the SOS text went out without a fresh position
 double lastLat = 0, lastLng = 0;
 uint32_t lastFixPost = 0, lastGoodFixAt = 0;
 int failures = 0;
@@ -266,8 +280,11 @@ static bool postTelemetry() {
 
     const uint32_t t0 = millis();
     const int st = http(1, String(BASE) + ":commit", w);
-    Serial.printf("[%4lu s] post %d in %lu ms | %s | fix %s %.5f,%.5f | %d km/h | bat %d%% | csq %d%s\n",
-                  millis() / 1000, st, millis() - t0, status, fix ? "yes" : "no", lat, lng, (int)spd, bat, csq,
+    // "sats" = satellites in the fix, "nmea" = good GPS sentences so far: nmea stuck at 0
+    // means the GPS isn't talking; nmea climbing with sats 0 means it's still searching.
+    Serial.printf("[%4lu s] post %d in %lu ms | %s | fix %s %.5f,%.5f | sats %lu nmea %lu | %d km/h | bat %d%% | csq %d%s\n",
+                  millis() / 1000, st, millis() - t0, status, fix ? "yes" : "no", lat, lng,
+                  (unsigned long)gps.satellites.value(), (unsigned long)gps.passedChecksum(), (int)spd, bat, csq,
                   newPoint ? " | +trail" : "");
     if (st != 200) return false;
     if (newPoint) { lastFixPost = millis(); lastLat = lat; lastLng = lng; }
@@ -318,7 +335,6 @@ static void fireSos() {
     Serial.printf("\n[%4lu s] SOS!\n", millis() / 1000);
     sosSince = millis();
     sosStampPending = true;
-    toneUntil = millis() + 800;                         // "it's sent" confirmation beep
 
     String t = "SOS from WatchPack - ";
     t += CHILD_NAME;
@@ -329,12 +345,16 @@ static void fireSos() {
         t += "Last known location (" + String((millis() - lastGoodFixAt) / 60000) + " min ago): https://maps.google.com/?q=";
         t += String(gps.location.lat(), 5) + "," + String(gps.location.lng(), 5);
     } else {
-        t += "No GPS fix yet.";
+        t += "No GPS fix yet - the location follows in another text.";
     }
+    sosNeedsFix = !freshFix();
+    bool anySent = false;
     for (const String& n : sosNumbers()) {              // SMS first: it works without internet
         const bool ok = sendSms(n.c_str(), t);
+        anySent = anySent || ok;
         Serial.printf("  sms %s %s\n", n.c_str(), ok ? "SENT" : "FAILED");
     }
+    if (anySent) toneUntil = millis() + 800;            // long beep = the texts went out
     postTelemetry();
 }
 
@@ -358,17 +378,19 @@ void setup() {
     appContacts = prefs.getString("contacts", "");
     Serial.printf("sos numbers: %u (%s)\n", (unsigned)sosNumbers().size(), appContacts.length() ? "from the app" : "secrets.h");
     SerialGPS.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
+    gpsUseAllSystems(SerialGPS);
     SerialAT.begin(MODEM_BAUD, SERIAL_8N1, MODEM_RX_PIN, MODEM_TX_PIN);
 
     Serial.print("modem ");
     if (!modemAnswers(2)) { modemPowerOn(); modemOk = modemAnswers(60); }
     else modemOk = true;
     Serial.println(modemOk ? "ready" : "NOT ANSWERING");
+    gpsUseAllSystems(SerialGPS);                        // again: right after power-up the L76K may still be booting
     if (!modemOk) return;
     at("ATE0");
     auto line = [](String s) { s.replace("\r", ""); s.replace("\n", " "); s.replace("OK", ""); s.trim(); return s; };
     Serial.printf("sim: %s\n", line(at("AT+CPIN?")).c_str());
-    for (int i = 0; i < 45 && !registered(); i++) {
+    for (int i = 0; i < 45 && !registered() && !sosRequested; i++) {     // an SOS doesn't wait
         if (i % 5 == 0) Serial.printf("  [%3lu s] %s | %s\n", millis() / 1000, line(at("AT+CEREG?")).c_str(), line(at("AT+CSQ")).c_str());
         wait(2000);
     }
@@ -384,12 +406,45 @@ void setup() {
     toneUntil = millis() + 150;                         // one short chirp = online
 }
 
+// Bench testing over USB: type "sos" in the serial monitor to fire an SOS without the
+// button, or "text 09XXXXXXXXX" to send one test SMS. Needs the cable plugged in, so it
+// can't be triggered from outside.
+static void serialCommands() {
+    static String cmd;
+    while (Serial.available()) {
+        const char c = Serial.read();
+        if (c != '\n' && c != '\r') { if (cmd.length() < 32) cmd += c; continue; }
+        cmd.trim();
+        if (cmd == "sos") { Serial.println("serial: SOS requested"); sosRequested = true; }
+        if (cmd.startsWith("text ")) {
+            String n = cmd.substring(5);
+            n.replace(" ", "");
+            if (n.startsWith("09")) n = "+63" + n.substring(1);
+            if (!validPhone(n)) Serial.println("serial: text needs a number like 09XXXXXXXXX");
+            else if (!modemOk) Serial.println("serial: modem is off");
+            else Serial.printf("  sms %s %s\n", n.c_str(),
+                               sendSms(n.c_str(), String("WatchPack test text from ") + CHILD_NAME + "'s device. SOS alerts will come from this number.") ? "SENT" : "FAILED");
+        }
+        cmd = "";
+    }
+}
+
 void loop() {
     service();
+    serialCommands();
     if (gps.location.isValid() && gps.location.isUpdated()) lastGoodFixAt = millis();
 
     if (sosRequested) { sosRequested = false; if (modemOk) fireSos(); }
     if (!modemOk) return;
+
+    // An SOS that went out without a position: text it as soon as GPS has one (SOS window only).
+    if (sosNeedsFix && !sosActive()) sosNeedsFix = false;
+    if (sosNeedsFix && freshFix()) {
+        sosNeedsFix = false;
+        String t = String("WatchPack - ") + CHILD_NAME + "'s location now (SOS): https://maps.google.com/?q=";
+        t += String(gps.location.lat(), 5) + "," + String(gps.location.lng(), 5);
+        for (const String& n : sosNumbers()) Serial.printf("  sms %s %s (location)\n", n.c_str(), sendSms(n.c_str(), t) ? "SENT" : "FAILED");
+    }
 
     if (buzzWasOn && !buzzUntil) { buzzWasOn = false; clearDeviceBuzz = true; lastPost = 0; }
 
@@ -406,8 +461,7 @@ void loop() {
         Serial.println("3 failures in a row — reconnecting data");
         failures = 0;
         if (!modemAnswers(3)) { modemPowerOn(); modemAnswers(60); at("ATE0"); }
-        for (int i = 0; i < 15 && !registered(); i++) wait(2000);
-        dataUp();
-        sslSetup();
+        for (int i = 0; i < 15 && !registered() && !sosRequested; i++) wait(2000);
+        if (!sosRequested) { dataUp(); sslSetup(); }    // else SOS first; data is retried later
     }
 }
